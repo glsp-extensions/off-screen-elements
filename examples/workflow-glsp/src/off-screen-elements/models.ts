@@ -29,8 +29,8 @@ export class TaskNodeOffScreenElement extends SShapeElement implements LayoutCon
     layout: string;
     layoutOptions?: { [key: string]: string | number | boolean };
     size = {
-        width: 32,
-        height: 32
+        width: 24,
+        height: 24
     };
 }
 

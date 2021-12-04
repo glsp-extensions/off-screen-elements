@@ -43,6 +43,17 @@
     text-align: left;
 }
 
+.off-screen-task {
+    stroke: black;
+    stroke-width: 1;
+}
+.off-screen-task-manual {
+    fill: lightblue;
+}
+.off-screen-task-automated {
+    fill: lightgray;
+}
+
 .sprotty-label {
     stroke-width: 0;
     fill: #000;

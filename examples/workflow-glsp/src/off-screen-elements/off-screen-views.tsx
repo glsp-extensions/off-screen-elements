@@ -14,37 +14,55 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import {injectable, multiInject, optional} from 'inversify';
-import {IView, RenderingContext, SShapeElement} from '@eclipse-glsp/client';
+import {RenderingContext, SModelElement } from '@eclipse-glsp/client';
 import {VNode} from 'snabbdom';
 
 import {svg} from 'sprotty';
 import {InstanceRegistry} from 'sprotty/lib/utils/registry';
-import {ViewRegistration} from 'sprotty/lib/base/views/view';
 import {WORKFLOW_TYPES} from '../workflow-types';
+import {IViewArgs} from 'sprotty/src/base/views/view';
+import {TaskNodeOffScreenElement} from './models';
+import {TaskNode} from '../model';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const JSX = { createElement: svg };
 
 @injectable()
-export class TaskNodeOffScreenView implements IView {
-    render(element: SShapeElement, context: RenderingContext): VNode {
-        return (
-            <rect x={element.position.x}
-                  y={element.position.y}
-                  width={element.size.width}
-                  height={element.size.height}
-            transform={'translate(0, 0)'}>
-            </rect>
-        );
-    }
-}
-
-@injectable()
-export class OffScreenViewRegistry extends InstanceRegistry<IView> {
-    constructor(@multiInject(WORKFLOW_TYPES.OffScreenViewRegistration) @optional() registrations: ViewRegistration[]) {
+export class OffScreenViewRegistry extends InstanceRegistry<IViewOffScreen> {
+    constructor(@multiInject(WORKFLOW_TYPES.OffScreenViewRegistration) @optional() registrations: OffScreenViewRegistration[]) {
         super();
         registrations.forEach(registration =>
             this.register(registration.type, registration.factory())
         );
     }
+}
+
+@injectable()
+export class TaskNodeOffScreenView implements IViewOffScreen {
+    render(element: TaskNodeOffScreenElement, offScreenElement: TaskNode, context: RenderingContext, args: { zoom: number }): VNode {
+        return (
+            <g>
+            <rect
+                // transform-origin={`${element.position.x}px ${element.position.y}px`}
+                transform={`scale(${args.zoom})`}
+                x={element.position.x}
+                y={element.position.y}
+                width={element.size.width}
+                height={element.size.height}
+                rx={6}
+                ry={6}
+                class={{'off-screen-task': true, [`off-screen-task-${offScreenElement.taskType}`]: true}}
+                style={{transformOrigin: `${element.position.x}px ${element.position.y}px`}}
+            ></rect></g>
+        );
+    }
+}
+
+export interface IViewOffScreen<A extends IViewArgs = Record<string, any>> {
+    render(model: Readonly<SModelElement>, offScreenModel: Readonly<SModelElement>, context: RenderingContext, args?: A): VNode | undefined
+}
+
+export interface OffScreenViewRegistration {
+    type: string
+    factory: () => IViewOffScreen
 }

@@ -15,12 +15,11 @@
  ********************************************************************************/
 
 import {WORKFLOW_TYPES} from '../workflow-types';
-import {IView} from 'sprotty';
-import {isInjectable, RenderingContext, SModelElement, SShapeElement} from '@eclipse-glsp/client';
+import {getZoom, isInjectable, RenderingContext, SModelElement, SShapeElement} from '@eclipse-glsp/client';
 import {interfaces, injectable, inject} from 'inversify';
-import {OffScreenViewRegistry} from './off-screen-views';
+import {IViewOffScreen, OffScreenViewRegistry} from './off-screen-views';
 import {OffScreenModelRegistry, registerOffScreenModelElement} from './models';
-import {assignBorderPositionAndSize} from './utils';
+import {assignBorderPosition} from './utils';
 import {VNode} from 'snabbdom';
 
 @injectable()
@@ -38,12 +37,15 @@ export class OffScreenElements {
 
         const indicatorElement = this.offScreenModelRegistry.get(offScreenElement.type);
 
-        assignBorderPositionAndSize(indicatorElement, offScreenElement as SShapeElement);
+        assignBorderPosition(indicatorElement, offScreenElement as SShapeElement);
 
         const offScreenView = this.offScreenViewRegistry.get(offScreenElement.type);
+
         return offScreenView.render(
             indicatorElement,
-            context
+            offScreenElement,
+            context,
+            { zoom: 1/getZoom(offScreenElement)}
         );
     }
 }
@@ -52,7 +54,7 @@ export function configureOffScreenModelElement(
     context: { bind: interfaces.Bind; isBound: interfaces.IsBound },
     type: string,
     modelConstr: new () => SShapeElement,
-    constr: interfaces.ServiceIdentifier<IView>
+    constr: interfaces.ServiceIdentifier<IViewOffScreen>
 ): void {
     registerOffScreenModelElement(context, type, modelConstr);
     configureOffScreenView(context, type, constr);
@@ -61,7 +63,7 @@ export function configureOffScreenModelElement(
 export function configureOffScreenView(
     context: { bind: interfaces.Bind; isBound: interfaces.IsBound },
     type: string,
-    constr: interfaces.ServiceIdentifier<IView>
+    constr: interfaces.ServiceIdentifier<IViewOffScreen>
 ): void {
     if (typeof constr === 'function') {
         if (!isInjectable(constr)) {

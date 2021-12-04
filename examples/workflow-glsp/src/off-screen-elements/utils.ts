@@ -47,14 +47,14 @@ export function toRelativePoint(point: Point, modelElement: SModelElement & Boun
     });
     return { x: b.x, y: b.y};
 }
-export function getCenterPoint(modelElement: SShapeElement, zoomFactor = getZoom(modelElement.root)): Point {
+export function getCenterPoint(modelBounds: Bounds, zoomFactor = 1): Point {
     return {
-        x: modelElement.position.x + (modelElement.size.width/2 * zoomFactor),
-        y: modelElement.position.y + (modelElement.size.height/2 * zoomFactor)
+        x: modelBounds.x + (modelBounds.width/2 * zoomFactor),
+        y: modelBounds.y + (modelBounds.height/2 * zoomFactor)
     };
 }
 
-export function assignBorderPositionAndSize(indicatorModel: SShapeElement, offScreenElement: SShapeElement): void {
+export function assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement): void {
     /*
     element position is always at the top left corner but for calculation of the
     intersection point, it should be at the center of the element.
@@ -62,26 +62,31 @@ export function assignBorderPositionAndSize(indicatorModel: SShapeElement, offSc
     have to be adjusted.
      */
 
-    const elementPosition = offScreenElement.root.localToParent(getCenterPoint(offScreenElement));
+    const zoomFactor = getZoom(offScreenElement.root);
+    // const elementPosition = offScreenElement.root.localToParent(getCenterPoint(offScreenElement));
+    const elementBounds = offScreenElement.root.localToParent(offScreenElement.position);
+    const elementCenterPoint = getCenterPoint(
+        { ...elementBounds, width: offScreenElement.size.width, height: offScreenElement.size.height },
+            zoomFactor
+    );
 
-    const centerPoint = {
+    const stageCenterPoint = {
         x: offScreenElement.root.canvasBounds.width/2,
         y: offScreenElement.root.canvasBounds.height/2
     };
-    const intersectionPoint = getBorderIntersectionPoint(elementPosition, {
-        ...centerPoint,
-        width: offScreenElement.root.canvasBounds.width - indicatorModel.size.width,
-        height: offScreenElement.root.canvasBounds.height - indicatorModel.size.height
+
+    const intersectionPoint = getBorderIntersectionPoint(elementCenterPoint, {
+        ...stageCenterPoint,
+        width: offScreenElement.root.canvasBounds.width - (indicatorModel.size.width),
+        height: offScreenElement.root.canvasBounds.height - (indicatorModel.size.height)
     });
 
     indicatorModel.position = toRelativePoint(intersectionPoint, offScreenElement);
-    const zoomFactor = getZoom(offScreenElement.root);
-    indicatorModel.size = {
-        width: indicatorModel.size.width/zoomFactor,
-        height: indicatorModel.size.height/zoomFactor
-    };
-    indicatorModel.position = getCenterPoint(indicatorModel, -1);
 
+    indicatorModel.position = getCenterPoint(
+        { ...indicatorModel.position, width: indicatorModel.size.width, height: indicatorModel.size.height },
+        -1/zoomFactor
+    );
 }
 
 function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
