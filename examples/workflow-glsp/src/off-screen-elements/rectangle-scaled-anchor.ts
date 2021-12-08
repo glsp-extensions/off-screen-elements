@@ -13,9 +13,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import {RectangleAnchor, PolylineEdgeRouter, SConnectableElement, Point} from 'sprotty';
-import {RECTANGULAR_SCALED_ANCHOR_KIND} from './models';
-import {getZoom} from '@eclipse-glsp/client';
+import { RectangleAnchor, PolylineEdgeRouter, SConnectableElement, Point } from 'sprotty';
+import { RECTANGULAR_SCALED_ANCHOR_KIND } from './models';
+import { getZoom } from '@eclipse-glsp/client';
 
 export class RectangleScaledAnchor extends RectangleAnchor {
     get kind(): string {
@@ -35,5 +35,4 @@ export class RectangleScaledAnchor extends RectangleAnchor {
         connectable.bounds = originalBounds;
         return p;
     }
-
 }

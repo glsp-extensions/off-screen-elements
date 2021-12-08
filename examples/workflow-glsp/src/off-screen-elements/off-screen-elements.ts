@@ -14,21 +14,23 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import {WORKFLOW_TYPES} from '../workflow-types';
+import { WORKFLOW_TYPES } from '../workflow-types';
 import {
     BoundsAware,
     getZoom,
     isInjectable,
-    RenderingContext, SChildElement, SConnectableElement,
+    RenderingContext,
+    SChildElement,
+    SConnectableElement,
     SModelElement,
     SShapeElement
 } from '@eclipse-glsp/client';
-import {interfaces, injectable, inject} from 'inversify';
-import {IViewOffScreen, OffScreenViewRegistry} from './off-screen-views';
-import {OffScreenModelRegistry, registerOffScreenModelElement} from './models';
-import {getBorderIntersectionPoint, getCenterPoint, isVisible, toRelativePoint} from './utils';
-import {VNode} from 'snabbdom';
-import {Point} from '@eclipse-glsp/protocol';
+import { interfaces, injectable, inject } from 'inversify';
+import { IViewOffScreen, OffScreenViewRegistry } from './off-screen-views';
+import { OffScreenModelRegistry, registerOffScreenModelElement } from './models';
+import { getBorderIntersectionPoint, getCenterPoint, isVisible, toRelativePoint } from './utils';
+import { VNode } from 'snabbdom';
+import { Point } from '@eclipse-glsp/protocol';
 
 @injectable()
 export class OffScreenElements {
@@ -40,22 +42,18 @@ export class OffScreenElements {
 
     private static OFF_SCREEN_ELEMENT_POSTFIX = '_off-screen-proxy';
 
-    private lastViewportCenterPoint: Point = { x: 0, y: 0};
+    private lastViewportCenterPoint: Point = { x: 0, y: 0 };
 
     private getOffScreenElementId(elementId: string, type: string | undefined = undefined): string {
         if (type !== undefined && !this.offScreenModelRegistry.hasKey(type)) {
             return this.getOnScreenElementId(elementId);
         }
 
-        return this.isOffScreenElementId(elementId) ?
-            elementId :
-            elementId + OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX;
+        return this.isOffScreenElementId(elementId) ? elementId : elementId + OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX;
     }
 
     private getOnScreenElementId(elementId: string): string {
-        return this.isOffScreenElementId(elementId) ?
-            elementId.slice(0, -OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX.length) :
-            elementId;
+        return this.isOffScreenElementId(elementId) ? elementId.slice(0, -OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX.length) : elementId;
     }
 
     public getElementId(element: SConnectableElement, context: RenderingContext): string {
@@ -95,12 +93,7 @@ export class OffScreenElements {
         this.assignBorderPosition(indicatorElement, offScreenElement as SShapeElement, context.targetKind === 'hidden');
         const offScreenView = this.offScreenViewRegistry.get(offScreenElement.type);
 
-        return offScreenView.render(
-            indicatorElement,
-            offScreenElement,
-            context,
-            { zoom: 1/getZoom(offScreenElement)}
-        );
+        return offScreenView.render(indicatorElement, offScreenElement, context, { zoom: 1 / getZoom(offScreenElement) });
     }
 
     assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement, useSavedPoints = false): void {
@@ -120,8 +113,8 @@ export class OffScreenElements {
         );
 
         let stageCenterPoint = {
-            x: offScreenElement.root.canvasBounds.width/2,
-            y: offScreenElement.root.canvasBounds.height/2
+            x: offScreenElement.root.canvasBounds.width / 2,
+            y: offScreenElement.root.canvasBounds.height / 2
         };
 
         if (useSavedPoints) {
@@ -132,15 +125,15 @@ export class OffScreenElements {
 
         const intersectionPoint = getBorderIntersectionPoint(elementCenterPoint, {
             ...stageCenterPoint,
-            width: offScreenElement.root.canvasBounds.width - (indicatorModel.size.width),
-            height: offScreenElement.root.canvasBounds.height - (indicatorModel.size.height)
+            width: offScreenElement.root.canvasBounds.width - indicatorModel.size.width,
+            height: offScreenElement.root.canvasBounds.height - indicatorModel.size.height
         });
 
         indicatorModel.position = toRelativePoint(intersectionPoint, offScreenElement);
 
         indicatorModel.position = getCenterPoint(
             { ...indicatorModel.position, width: indicatorModel.size.width, height: indicatorModel.size.height },
-            -1/zoomFactor
+            -1 / zoomFactor
         );
         indicatorModel.position = {
             x: indicatorModel.position.x + offScreenElement.position.x,
@@ -177,4 +170,3 @@ export function configureOffScreenView(
         factory: () => ctx.container.get(constr)
     }));
 }
-

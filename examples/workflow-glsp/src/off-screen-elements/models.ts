@@ -13,15 +13,10 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import {
-    boundsFeature,
-    FactoryRegistry,
-    LayoutContainer, SConnectableElement,
-    SModelElement
-} from '@eclipse-glsp/client';
-import {injectable, interfaces, multiInject, optional} from 'inversify';
-import {CustomFeatures} from 'sprotty/src/base/model/smodel-factory';
-import {WORKFLOW_TYPES} from '../workflow-types';
+import { boundsFeature, FactoryRegistry, LayoutContainer, SConnectableElement, SModelElement } from '@eclipse-glsp/client';
+import { injectable, interfaces, multiInject, optional } from 'inversify';
+import { CustomFeatures } from 'sprotty/src/base/model/smodel-factory';
+import { WORKFLOW_TYPES } from '../workflow-types';
 
 export const RECTANGULAR_SCALED_ANCHOR_KIND = 'rectangular_scaled';
 
@@ -35,19 +30,21 @@ export class TaskNodeOffScreenElement extends SConnectableElement implements Lay
     layout: string;
     layoutOptions?: { [key: string]: string | number | boolean };
     size = {
-        width: 24,
-        height: 24
+        width: 16,
+        height: 16
     };
 }
 
 export function registerOffScreenModelElement(
-    context: { bind: interfaces.Bind, isBound: interfaces.IsBound },
+    context: { bind: interfaces.Bind; isBound: interfaces.IsBound },
     type: string,
     constr: new () => SModelElement,
     features?: CustomFeatures
 ): void {
     context.bind<OffScreenElementRegistration>(WORKFLOW_TYPES.OffScreenModelRegistration).toConstantValue({
-        type, constr, features
+        type,
+        constr,
+        features
     });
 }
 
@@ -62,12 +59,12 @@ export class OffScreenModelRegistry extends FactoryRegistry<SModelElement, void>
 }
 
 export interface OffScreenElementRegistration {
-    type: string
-    constr: OffScreenElementConstructor
-    features?: CustomFeatures
+    type: string;
+    constr: OffScreenElementConstructor;
+    features?: CustomFeatures;
 }
 
 export interface OffScreenElementConstructor {
-    DEFAULT_FEATURES?: ReadonlyArray<symbol>
-    new (): SModelElement
+    DEFAULT_FEATURES?: ReadonlyArray<symbol>;
+    new (): SModelElement;
 }

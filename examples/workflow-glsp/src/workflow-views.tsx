@@ -22,20 +22,19 @@ import {
     SEdge,
     toDegrees
 } from '@eclipse-glsp/client';
-import {inject, injectable} from 'inversify';
+import { inject, injectable } from 'inversify';
 import { VNode } from 'snabbdom';
-import { svg} from 'sprotty';
+import { svg } from 'sprotty';
 import { Icon } from './model';
-import {IViewArgs} from 'sprotty/lib/base/views/view';
-import {WORKFLOW_TYPES} from './workflow-types';
-import {OffScreenElements} from './off-screen-elements/off-screen-elements';
+import { IViewArgs } from 'sprotty/lib/base/views/view';
+import { WORKFLOW_TYPES } from './workflow-types';
+import { OffScreenElements } from './off-screen-elements/off-screen-elements';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const JSX = { createElement: svg };
 
 @injectable()
 export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
-
     @inject(WORKFLOW_TYPES.OffScreenElements)
     offScreenElement: OffScreenElements;
 

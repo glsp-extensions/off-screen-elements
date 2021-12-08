@@ -13,22 +13,12 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import {
-    IViewArgs,
-    RenderingTargetKind,
-    ViewRegistry
-} from 'sprotty/lib/base/views/view';
+import { IViewArgs, RenderingTargetKind, ViewRegistry } from 'sprotty/lib/base/views/view';
 import { VNode } from 'snabbdom';
 import { IVNodePostprocessor } from 'sprotty/lib/base/views/vnode-postprocessor';
-import {
-    ModelRenderer,
-    SModelElement,
-    SParentElement,
-    SChildElement,
-    BoundsAware
-} from '@eclipse-glsp/client';
-import {isVisible} from './utils';
-import {OffScreenElements} from './off-screen-elements';
+import { ModelRenderer, SModelElement, SParentElement, SChildElement, BoundsAware } from '@eclipse-glsp/client';
+import { isVisible } from './utils';
+import { OffScreenElements } from './off-screen-elements';
 
 export class OffScreenElementRenderer extends ModelRenderer {
     protected _postprocessors: IVNodePostprocessor[];
@@ -62,16 +52,12 @@ export class OffScreenElementRenderer extends ModelRenderer {
     }
 
     renderChildren(element: Readonly<SParentElement>, args?: IViewArgs): VNode[] {
-        const context = args ?
-            new OffScreenElementRenderer(
-                this.viewRegistry,
-                this.offScreenElements,
-                this.targetKind,
-                this._postprocessors,
-                { ...args, parentArgs: this.args }
-            ) : this;
-        return element.children
-            .map(child => context.renderElement(child))
-            .filter(vnode => vnode !== undefined) as VNode[];
+        const context = args
+            ? new OffScreenElementRenderer(this.viewRegistry, this.offScreenElements, this.targetKind, this._postprocessors, {
+                  ...args,
+                  parentArgs: this.args
+              })
+            : this;
+        return element.children.map(child => context.renderElement(child)).filter(vnode => vnode !== undefined) as VNode[];
     }
 }

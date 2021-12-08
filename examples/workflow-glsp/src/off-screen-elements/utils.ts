@@ -19,10 +19,11 @@ import {
     getAbsoluteBounds,
     Point,
     Bounds,
-    getZoom, SModelElement,
+    getZoom,
+    SModelElement,
     toAbsoluteBounds
 } from '@eclipse-glsp/client';
-import {BoundsAware} from 'sprotty/src/features/bounds/model';
+import { BoundsAware } from 'sprotty/src/features/bounds/model';
 
 export function isVisible(model: Readonly<SChildElement & BoundsAware>, context: RenderingContext): boolean {
     if (context.targetKind === 'hidden') {
@@ -31,32 +32,29 @@ export function isVisible(model: Readonly<SChildElement & BoundsAware>, context:
 
     const ab = getAbsoluteBounds(model);
     const canvasBounds = model.root.canvasBounds;
-    return ab.x <= canvasBounds.width
-        && ab.x + ab.width >= 0
-        && ab.y <= canvasBounds.height
-        && ab.y + ab.height >= 0;
+    return ab.x <= canvasBounds.width && ab.x + ab.width >= 0 && ab.y <= canvasBounds.height && ab.y + ab.height >= 0;
 }
 
 export function toRelativePoint(point: Point, modelElement: SModelElement & BoundsAware): Point {
     const zoomFactor = getZoom(modelElement.root);
     const absoluteBounds = toAbsoluteBounds(modelElement);
     const b = modelElement.root.parentToLocal({
-        x: (point.x - (absoluteBounds.x * zoomFactor)),
-        y: (point.y - (absoluteBounds.y * zoomFactor))
+        x: point.x - absoluteBounds.x * zoomFactor,
+        y: point.y - absoluteBounds.y * zoomFactor
     });
-    return { x: b.x, y: b.y};
+    return { x: b.x, y: b.y };
 }
 export function getCenterPoint(modelBounds: Bounds, zoomFactor = 1): Point {
     return {
-        x: modelBounds.x + (modelBounds.width/2 * zoomFactor),
-        y: modelBounds.y + (modelBounds.height/2 * zoomFactor)
+        x: modelBounds.x + (modelBounds.width / 2) * zoomFactor,
+        y: modelBounds.y + (modelBounds.height / 2) * zoomFactor
     };
 }
 
 export function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
     const s = (r.y - a.y) / (r.x - a.x);
-    const hsw = s * r.width / 2;
-    const hsh = ( r.height / 2 ) / s;
+    const hsw = (s * r.width) / 2;
+    const hsh = r.height / 2 / s;
     const hh = r.height / 2;
     const hw = r.width / 2;
 
@@ -74,14 +72,14 @@ export function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
             y = r.y - s * hw;
         }
     }
-    if ( -hw <= hsh && hsh <= hw) {
+    if (-hw <= hsh && hsh <= hw) {
         if (r.y < a.y) {
             // top edge
-            x = r.x + hh/s;
+            x = r.x + hh / s;
             y = r.y + hh;
         } else if (r.y > a.y) {
             // bottom edge
-            x = r.x - hh/s;
+            x = r.x - hh / s;
             y = r.y - hh;
         }
     }
