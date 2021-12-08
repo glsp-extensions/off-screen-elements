@@ -22,16 +22,23 @@ import {
     SEdge,
     toDegrees
 } from '@eclipse-glsp/client';
-import { injectable } from 'inversify';
+import {inject, injectable} from 'inversify';
 import { VNode } from 'snabbdom';
-import { svg } from 'sprotty';
+import { svg} from 'sprotty';
 import { Icon } from './model';
+import {IViewArgs} from 'sprotty/lib/base/views/view';
+import {WORKFLOW_TYPES} from './workflow-types';
+import {OffScreenElements} from './off-screen-elements/off-screen-elements';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const JSX = { createElement: svg };
 
 @injectable()
 export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
+
+    @inject(WORKFLOW_TYPES.OffScreenElements)
+    offScreenElement: OffScreenElements;
+
     protected renderAdditionals(edge: SEdge, segments: Point[], context: RenderingContext): VNode[] {
         const additionals = super.renderAdditionals(edge, segments, context);
         const p1 = segments[segments.length - 2];
@@ -48,6 +55,25 @@ export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
         );
         additionals.push(arrow);
         return additionals;
+    }
+
+    render(edge: SEdge, context: RenderingContext, args?: IViewArgs): VNode | undefined {
+        // replace target and source with off-screen elements
+        if (edge.target) {
+            edge.targetId = this.offScreenElement.getElementId(edge.target, context);
+        }
+
+        if (edge.source) {
+            edge.sourceId = this.offScreenElement.getElementId(edge.source, context);
+        }
+
+        // todo: find a better solution
+        // always re-calculate positions of edges
+        // sometimes old routing points are not correct
+        // (e.g., when off screen element re-appears after a zoom event, or right after a setModel server round trip)
+        delete args?.edgeRouting;
+
+        return super.render(edge, context, args);
     }
 }
 

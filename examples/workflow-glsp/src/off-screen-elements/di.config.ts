@@ -23,10 +23,13 @@ import {OffScreenViewRegistry, TaskNodeOffScreenView} from './off-screen-views';
 import {WORKFLOW_TYPES} from '../workflow-types';
 import {configureOffScreenModelElement, OffScreenElements} from './off-screen-elements';
 import {OffScreenModelRegistry, TaskNodeOffScreenElement} from './models';
+import {RectangleScaledAnchor} from './rectangle-scaled-anchor';
 
 export const offScreenElements = new ContainerModule((bind, unbind, isBound, rebind) => {
 
     const context = { bind, unbind, isBound, rebind };
+
+    bind(TYPES.IAnchorComputer).to(RectangleScaledAnchor).inSingletonScope();
 
     bind(WORKFLOW_TYPES.OffScreenElements).to(OffScreenElements).inSingletonScope();
 

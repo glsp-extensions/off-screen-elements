@@ -17,7 +17,6 @@ import {
     SChildElement,
     RenderingContext,
     getAbsoluteBounds,
-    SShapeElement,
     Point,
     Bounds,
     getZoom, SModelElement,
@@ -54,42 +53,7 @@ export function getCenterPoint(modelBounds: Bounds, zoomFactor = 1): Point {
     };
 }
 
-export function assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement): void {
-    /*
-    element position is always at the top left corner but for calculation of the
-    intersection point, it should be at the center of the element.
-    This means, that the position of both elements, offScreenElement and indicatorModel,
-    have to be adjusted.
-     */
-
-    const zoomFactor = getZoom(offScreenElement.root);
-    // const elementPosition = offScreenElement.root.localToParent(getCenterPoint(offScreenElement));
-    const elementBounds = offScreenElement.root.localToParent(offScreenElement.position);
-    const elementCenterPoint = getCenterPoint(
-        { ...elementBounds, width: offScreenElement.size.width, height: offScreenElement.size.height },
-            zoomFactor
-    );
-
-    const stageCenterPoint = {
-        x: offScreenElement.root.canvasBounds.width/2,
-        y: offScreenElement.root.canvasBounds.height/2
-    };
-
-    const intersectionPoint = getBorderIntersectionPoint(elementCenterPoint, {
-        ...stageCenterPoint,
-        width: offScreenElement.root.canvasBounds.width - (indicatorModel.size.width),
-        height: offScreenElement.root.canvasBounds.height - (indicatorModel.size.height)
-    });
-
-    indicatorModel.position = toRelativePoint(intersectionPoint, offScreenElement);
-
-    indicatorModel.position = getCenterPoint(
-        { ...indicatorModel.position, width: indicatorModel.size.width, height: indicatorModel.size.height },
-        -1/zoomFactor
-    );
-}
-
-function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
+export function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
     const s = (r.y - a.y) / (r.x - a.x);
     const hsw = s * r.width / 2;
     const hsh = ( r.height / 2 ) / s;

@@ -16,15 +16,21 @@
 import {
     boundsFeature,
     FactoryRegistry,
-    LayoutContainer,
-    SShapeElement
+    LayoutContainer, SConnectableElement,
+    SModelElement
 } from '@eclipse-glsp/client';
 import {injectable, interfaces, multiInject, optional} from 'inversify';
 import {CustomFeatures} from 'sprotty/src/base/model/smodel-factory';
 import {WORKFLOW_TYPES} from '../workflow-types';
 
-export class TaskNodeOffScreenElement extends SShapeElement implements LayoutContainer {
+export const RECTANGULAR_SCALED_ANCHOR_KIND = 'rectangular_scaled';
+
+export class TaskNodeOffScreenElement extends SConnectableElement implements LayoutContainer {
     static readonly DEFAULT_FEATURES = [boundsFeature];
+
+    get anchorKind(): string | undefined {
+        return RECTANGULAR_SCALED_ANCHOR_KIND;
+    }
 
     layout: string;
     layoutOptions?: { [key: string]: string | number | boolean };
@@ -37,7 +43,7 @@ export class TaskNodeOffScreenElement extends SShapeElement implements LayoutCon
 export function registerOffScreenModelElement(
     context: { bind: interfaces.Bind, isBound: interfaces.IsBound },
     type: string,
-    constr: new () => SShapeElement,
+    constr: new () => SModelElement,
     features?: CustomFeatures
 ): void {
     context.bind<OffScreenElementRegistration>(WORKFLOW_TYPES.OffScreenModelRegistration).toConstantValue({
@@ -46,13 +52,12 @@ export function registerOffScreenModelElement(
 }
 
 @injectable()
-export class OffScreenModelRegistry extends FactoryRegistry<SShapeElement, void> {
+export class OffScreenModelRegistry extends FactoryRegistry<SModelElement, void> {
     constructor(@multiInject(WORKFLOW_TYPES.OffScreenModelRegistration) @optional() registrations: OffScreenElementRegistration[]) {
         super();
         registrations.forEach(registration => {
             this.register(registration.type, () => new registration.constr());
         });
-        console.log(registrations);
     }
 }
 
@@ -64,5 +69,5 @@ export interface OffScreenElementRegistration {
 
 export interface OffScreenElementConstructor {
     DEFAULT_FEATURES?: ReadonlyArray<symbol>
-    new (): SShapeElement
+    new (): SModelElement
 }

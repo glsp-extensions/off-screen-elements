@@ -40,20 +40,23 @@ export class OffScreenViewRegistry extends InstanceRegistry<IViewOffScreen> {
 @injectable()
 export class TaskNodeOffScreenView implements IViewOffScreen {
     render(element: TaskNodeOffScreenElement, offScreenElement: TaskNode, context: RenderingContext, args: { zoom: number }): VNode {
+        // two groups because first one is managed by sprotty
+        const translatedX = element.position.x - offScreenElement.position.x;
+        const translatedY = element.position.y - offScreenElement.position.y;
         return (
             <g>
-            <rect
-                // transform-origin={`${element.position.x}px ${element.position.y}px`}
-                transform={`scale(${args.zoom})`}
-                x={element.position.x}
-                y={element.position.y}
-                width={element.size.width}
-                height={element.size.height}
-                rx={6}
-                ry={6}
-                class={{'off-screen-task': true, [`off-screen-task-${offScreenElement.taskType}`]: true}}
-                style={{transformOrigin: `${element.position.x}px ${element.position.y}px`}}
-            ></rect></g>
+                <g
+                    transform={`scale(${args.zoom}) translate(${translatedX}, ${translatedY})`}
+                    style={{transformOrigin: `${translatedX}px ${translatedY}px`}}>
+                    <rect
+                        width={element.size.width}
+                        height={element.size.height}
+                        rx={6}
+                        ry={6}
+                        class={{'off-screen-task': true, [`off-screen-task-${offScreenElement.taskType}`]: true}}
+                    ></rect>
+                </g>
+            </g>
         );
     }
 }
