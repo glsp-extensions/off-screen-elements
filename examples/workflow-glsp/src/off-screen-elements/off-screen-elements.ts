@@ -44,7 +44,7 @@ export class OffScreenElements {
 
     private lastViewportCenterPoint: Point = { x: 0, y: 0 };
 
-    private getOffScreenElementId(elementId: string, type: string | undefined = undefined): string {
+    public getOffScreenElementId(elementId: string, type: string | undefined = undefined): string {
         if (type !== undefined && !this.offScreenModelRegistry.hasKey(type)) {
             return this.getOnScreenElementId(elementId);
         }

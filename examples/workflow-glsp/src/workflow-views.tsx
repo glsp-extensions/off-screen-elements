@@ -36,7 +36,7 @@ const JSX = { createElement: svg };
 @injectable()
 export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
     @inject(WORKFLOW_TYPES.OffScreenElements)
-    offScreenElement: OffScreenElements;
+    offScreenElements: OffScreenElements;
 
     protected renderAdditionals(edge: SEdge, segments: Point[], context: RenderingContext): VNode[] {
         const additionals = super.renderAdditionals(edge, segments, context);
@@ -59,11 +59,11 @@ export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
     render(edge: SEdge, context: RenderingContext, args?: IViewArgs): VNode | undefined {
         // replace target and source with off-screen elements
         if (edge.target) {
-            edge.targetId = this.offScreenElement.getElementId(edge.target, context);
+            edge.targetId = this.offScreenElements.getElementId(edge.target, context);
         }
 
         if (edge.source) {
-            edge.sourceId = this.offScreenElement.getElementId(edge.source, context);
+            edge.sourceId = this.offScreenElements.getElementId(edge.source, context);
         }
 
         // todo: find a better solution
