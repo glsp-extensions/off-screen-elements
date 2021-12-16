@@ -71,6 +71,7 @@ export class OffScreenElements {
     public isOffScreenElementId(elementId: string): boolean {
         return elementId.endsWith(OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX);
     }
+
     public renderOffScreenElement(offScreenElement: SModelElement, context: RenderingContext): VNode | undefined {
         if (!this.offScreenModelRegistry.hasKey(offScreenElement.type)) {
             return;

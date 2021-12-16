@@ -25,8 +25,8 @@ import {
 } from '@eclipse-glsp/client';
 import { BoundsAware } from 'sprotty/src/features/bounds/model';
 
-export function isVisible(model: Readonly<SChildElement & BoundsAware>, context: RenderingContext): boolean {
-    if (context.targetKind === 'hidden') {
+export function isVisible(model: Readonly<SChildElement & BoundsAware>, context?: RenderingContext): boolean {
+    if (context && context.targetKind === 'hidden') {
         return true;
     }
 

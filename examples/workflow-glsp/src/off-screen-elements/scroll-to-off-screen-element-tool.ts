@@ -13,11 +13,12 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, BaseGLSPTool, MouseListener, SModelElement } from '@eclipse-glsp/client';
+import { Action, BaseGLSPTool, BoundsAware, MouseListener, SChildElement, SModelElement } from '@eclipse-glsp/client';
 import { inject, injectable } from 'inversify';
 import { WORKFLOW_TYPES } from '../workflow-types';
 import { OffScreenElements } from './off-screen-elements';
 import { CenterAction } from 'sprotty';
+import { isVisible } from './utils';
 
 @injectable()
 export class ScrollToOffScreenElementTool extends BaseGLSPTool {
@@ -55,7 +56,8 @@ class OffScreenElementMouseListener extends MouseListener {
 
     mouseUp(element: SModelElement, event: MouseEvent): Action[] {
         const offScreenElement = element.index.getById(this.offScreenElements.getOffScreenElementId(element.id));
-        if (offScreenElement) {
+
+        if (offScreenElement && !isVisible(element as SChildElement & BoundsAware)) {
             return [new CenterAction([element.id], true, true)];
         }
         return [];
