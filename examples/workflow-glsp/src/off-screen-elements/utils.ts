@@ -51,6 +51,31 @@ export function getCenterPoint(modelBounds: Bounds, zoomFactor = 1): Point {
     };
 }
 
+export function areOverlappingWithZoom(element1: SModelElement & BoundsAware, element2: SModelElement & BoundsAware, sizeMultiplier = 1): boolean {
+    let zoomFactor = getZoom(element1.root);
+
+    zoomFactor = zoomFactor / sizeMultiplier;
+
+    const b1 = toAbsoluteBounds(element1);
+    const b2 = toAbsoluteBounds(element2);
+    const r1TopLeft: Point = b1;
+    const r1BottomRight = { x: b1.x + b1.width/zoomFactor, y: b1.y + b1.height/zoomFactor };
+    const r2TopLeft: Point = b2;
+    const r2BottomRight = { x: b2.x + b2.width/zoomFactor, y: b2.y + b2.height/zoomFactor };
+
+    // If one rectangle is on left side of other
+    if (r1TopLeft.x > r2BottomRight.x || r2TopLeft.x > r1BottomRight.x) {
+        return false;
+    }
+
+    // If one rectangle is above other
+    if (r1BottomRight.y < r2TopLeft.y || r2BottomRight.y < r1TopLeft.y) {
+        return false;
+    }
+
+    return true;
+}
+
 export function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
     const s = (r.y - a.y) / (r.x - a.x);
     const hsw = (s * r.width) / 2;

@@ -19,7 +19,7 @@ import {
     Point,
     PolylineEdgeViewWithGapsOnIntersections,
     RenderingContext,
-    SEdge,
+    SEdge, SGraph, SGraphView,
     toDegrees
 } from '@eclipse-glsp/client';
 import { inject, injectable } from 'inversify';
@@ -32,6 +32,18 @@ import { OffScreenElements } from './off-screen-elements/off-screen-elements';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const JSX = { createElement: svg };
+
+@injectable()
+export class WorkflowSGraphView<IRenderingArgs> extends SGraphView<IRenderingArgs> {
+
+    @inject(WORKFLOW_TYPES.OffScreenElements)
+    offScreenElements: OffScreenElements;
+
+    render(model: Readonly<SGraph>, context: RenderingContext, args?: IRenderingArgs): VNode {
+        this.offScreenElements.createOffScreenElements(model, context);
+        return super.render(model, context, args);
+    }
+}
 
 @injectable()
 export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {

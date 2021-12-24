@@ -16,21 +16,29 @@
 
 import { WORKFLOW_TYPES } from '../workflow-types';
 import {
-    BoundsAware,
+     BoundsAware,
     getZoom,
     isInjectable,
     RenderingContext,
     SChildElement,
     SConnectableElement,
-    SModelElement,
+    SModelElement, SParentElement,
     SShapeElement
 } from '@eclipse-glsp/client';
 import { interfaces, injectable, inject } from 'inversify';
 import { IViewOffScreen, OffScreenViewRegistry } from './off-screen-views';
 import { OffScreenModelRegistry, registerOffScreenModelElement } from './models';
-import { getBorderIntersectionPoint, getCenterPoint, isVisible, toRelativePoint } from './utils';
+import {
+    areOverlappingWithZoom,
+    getBorderIntersectionPoint,
+    getCenterPoint,
+    isVisible,
+    toRelativePoint
+} from './utils';
 import { VNode } from 'snabbdom';
 import { Point } from '@eclipse-glsp/protocol';
+
+const SIZE_MULTIPLIER = 2;
 
 @injectable()
 export class OffScreenElements {
@@ -41,8 +49,7 @@ export class OffScreenElements {
     protected offScreenViewRegistry: OffScreenViewRegistry;
 
     private static OFF_SCREEN_ELEMENT_POSTFIX = '_off-screen-proxy';
-
-    private lastViewportCenterPoint: Point = { x: 0, y: 0 };
+    private offScreenIndicators: Record<string, OffScreenElementToRender> = {};
 
     public getOffScreenElementId(elementId: string, type: string | undefined = undefined): string {
         if (type !== undefined && !this.offScreenModelRegistry.hasKey(type)) {
@@ -72,32 +79,108 @@ export class OffScreenElements {
         return elementId.endsWith(OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX);
     }
 
+    public createOffScreenElements(parent: SParentElement, context: RenderingContext): void {
+        this.offScreenIndicators = {};
+        this.createOffScreenElementsRec(parent, context);
+        this.findOverlaps();
+        this.calculateNewPositions();
+    }
+
+    private findOverlaps(): void {
+        const groups: OffScreenElementToRender[][] = [];
+
+        // create groups of overlapping elements
+
+        for (const elementKey of Object.keys(this.offScreenIndicators)) {
+            let groupFound = false;
+            for (const group of groups) {
+                for (const element of group) {
+                    if (areOverlappingWithZoom(this.offScreenIndicators[elementKey].indicator, element.indicator, SIZE_MULTIPLIER)) {
+                        group.push(this.offScreenIndicators[elementKey]);
+                        this.offScreenIndicators[elementKey].overlaps = group;
+                        groupFound = true;
+                        break;
+                    }
+                }
+
+                if (groupFound) {
+                    break;
+                }
+            }
+            if (!groupFound) {
+                const newGroup = [this.offScreenIndicators[elementKey]];
+                groups.push(newGroup);
+                this.offScreenIndicators[elementKey].overlaps = newGroup;
+            }
+        }
+    }
+
+    private calculateNewPositions(): void {
+        for (const element of Object.values(this.offScreenIndicators)) {
+            if (element.overlaps.length > 1) {
+                // get average point
+                const centerPoints: Point[] = element.overlaps.map(sshape => getCenterPoint(sshape.element.bounds));
+                let averagePoint: Point = {
+                    x: centerPoints.reduce((prev, curr) => prev+curr.x, 0),
+                    y: centerPoints.reduce((prev, curr) => prev+curr.y, 0)
+                };
+                averagePoint = {
+                    x: averagePoint.x/(element.overlaps.length),
+                    y: averagePoint.y/(element.overlaps.length)
+                };
+
+                const originalPosition = element.element.position;
+
+                element.element.position = averagePoint;
+                this.assignBorderPosition(element.indicator, element.element, false);
+                element.element.position = originalPosition;
+            }
+        }
+    }
+
+    public createOffScreenElementsRec(parent: SParentElement, context: RenderingContext): void {
+
+        if (this.offScreenModelRegistry.hasKey(parent.type) && !isVisible(parent as SChildElement & BoundsAware, context)) {
+            const id = `${parent.id}${OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX}`;
+            let indicatorElement = parent.index.getById(id) as SShapeElement;
+
+            if (indicatorElement === undefined) {
+                indicatorElement = this.offScreenModelRegistry.get(parent.type) as SShapeElement;
+                indicatorElement.id = id;
+
+                // todo: proxy elements require a parent for edges to be connected to it but parent is read only
+                // indicatorElement.parent = (offScreenElement as SChildElement).parent;
+                Object.assign(indicatorElement, { parent: (parent as SChildElement).parent });
+
+                parent.index.add(indicatorElement);
+            }
+
+            this.assignBorderPosition(indicatorElement, parent as SShapeElement);
+            this.offScreenIndicators[parent.id] = { indicator: indicatorElement, element: parent as SShapeElement, overlaps: [] };
+        }
+
+        for(const child of parent.children) {
+            this.createOffScreenElementsRec(child, context);
+        }
+    }
+
     public renderOffScreenElement(offScreenElement: SModelElement, context: RenderingContext): VNode | undefined {
-        if (!this.offScreenModelRegistry.hasKey(offScreenElement.type)) {
+        if (!this.offScreenIndicators[offScreenElement.id]) {
             return;
         }
 
-        const id = `${offScreenElement.id}${OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX}`;
-        let indicatorElement = offScreenElement.index.getById(id) as SShapeElement;
+        // dont render when overlapping
+        /*
+        if (this.offScreenIndicators[offScreenElement.id].overlaps.length) {
+            return;
+        }*/
 
-        if (indicatorElement === undefined) {
-            indicatorElement = this.offScreenModelRegistry.get(offScreenElement.type) as SShapeElement;
-            indicatorElement.id = id;
-
-            // todo: proxy elements require a parent for edges to be connected to it but parent is read only
-            // indicatorElement.parent = (offScreenElement as SChildElement).parent;
-            Object.assign(indicatorElement, { parent: (offScreenElement as SChildElement).parent });
-
-            offScreenElement.index.add(indicatorElement);
-        }
-
-        this.assignBorderPosition(indicatorElement, offScreenElement as SShapeElement, context.targetKind === 'hidden');
         const offScreenView = this.offScreenViewRegistry.get(offScreenElement.type);
 
-        return offScreenView.render(indicatorElement, offScreenElement, context, { zoom: 1 / getZoom(offScreenElement) });
+        return offScreenView.render(this.offScreenIndicators[offScreenElement.id].indicator, offScreenElement, context, { zoom: 1 / getZoom(offScreenElement) });
     }
 
-    assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement, useSavedPoints = false): void {
+    assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement, calculateCenter = true): void {
         /*
         element position is always at the top left corner but for calculation of the
         intersection point, it should be at the center of the element.
@@ -108,21 +191,19 @@ export class OffScreenElements {
         const zoomFactor = getZoom(offScreenElement.root);
 
         const elementBounds = offScreenElement.root.localToParent(offScreenElement.position);
-        const elementCenterPoint = getCenterPoint(
-            { ...elementBounds, width: offScreenElement.size.width, height: offScreenElement.size.height },
-            zoomFactor
-        );
 
-        let stageCenterPoint = {
+        let elementCenterPoint = { x: elementBounds.x, y: elementBounds.y};
+        if (calculateCenter) {
+            elementCenterPoint = getCenterPoint(
+                {...elementBounds, width: offScreenElement.size.width, height: offScreenElement.size.height},
+                zoomFactor
+            );
+      }
+
+        const stageCenterPoint = {
             x: offScreenElement.root.canvasBounds.width / 2,
             y: offScreenElement.root.canvasBounds.height / 2
         };
-
-        if (useSavedPoints) {
-            stageCenterPoint = this.lastViewportCenterPoint;
-        } else {
-            this.lastViewportCenterPoint = stageCenterPoint;
-        }
 
         const intersectionPoint = getBorderIntersectionPoint(elementCenterPoint, {
             ...stageCenterPoint,
@@ -170,4 +251,10 @@ export function configureOffScreenView(
         type,
         factory: () => ctx.container.get(constr)
     }));
+}
+
+interface OffScreenElementToRender {
+    indicator: SShapeElement;
+    element: SShapeElement;
+    overlaps: OffScreenElementToRender[];
 }

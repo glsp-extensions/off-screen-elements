@@ -41,6 +41,7 @@ export class TaskNodeOffScreenView implements IViewOffScreen {
         // two groups because first one is managed by sprotty
         const translatedX = element.position.x - offScreenElement.position.x;
         const translatedY = element.position.y - offScreenElement.position.y;
+
         return (
             <g>
                 <g
