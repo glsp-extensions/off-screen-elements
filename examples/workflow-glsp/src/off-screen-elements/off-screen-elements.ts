@@ -173,15 +173,21 @@ export class OffScreenElements {
             return;
         }
 
-        // dont render when overlapping
-        /*
-        if (this.offScreenIndicators[offScreenElement.id].overlaps.length) {
+        // only render first element of overlaps
+        if (this.offScreenIndicators[offScreenElement.id].overlaps.length && this.offScreenIndicators[offScreenElement.id].overlaps[0].element.id !== offScreenElement.id) {
             return;
-        }*/
+        }
+
+        // Instead of using a proxy of a single element as a representation for multiple grouped elements,
+        // a new type of visual element should be created that is independent of any original elements.
+        // This would not trigger any additional effects, as for example the tooltip when hovering over a group
 
         const offScreenView = this.offScreenViewRegistry.get(offScreenElement.type);
 
-        return offScreenView.render(this.offScreenIndicators[offScreenElement.id].indicator, offScreenElement, context, { zoom: 1 / getZoom(offScreenElement) });
+        return offScreenView.render(this.offScreenIndicators[offScreenElement.id].indicator, offScreenElement, context, {
+            zoom: 1 / getZoom(offScreenElement),
+            numberOfOverlaps: this.offScreenIndicators[offScreenElement.id].overlaps.length
+        });
     }
 
     assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement, calculateCenter = true): void {

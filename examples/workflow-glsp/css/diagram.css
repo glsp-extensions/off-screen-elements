@@ -54,6 +54,10 @@
     fill: lightgray;
 }
 
+.off-screen-task-multiple {
+    fill: white;
+}
+
 .sprotty-label {
     stroke-width: 0;
     fill: #000;
