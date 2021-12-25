@@ -37,7 +37,12 @@ export class OffScreenViewRegistry extends InstanceRegistry<IViewOffScreen> {
 
 @injectable()
 export class TaskNodeOffScreenView implements IViewOffScreen {
-    render(element: TaskNodeOffScreenElement, offScreenElement: TaskNode, context: RenderingContext, args: { zoom: number, numberOfOverlaps: number }): VNode {
+    render(
+        element: TaskNodeOffScreenElement,
+        offScreenElement: TaskNode,
+        context: RenderingContext,
+        args: { zoom: number; numberOfOverlaps: number }
+    ): VNode {
         // two groups because first one is managed by sprotty
         const translatedX = element.position.x - offScreenElement.position.x;
         const translatedY = element.position.y - offScreenElement.position.y;
@@ -53,9 +58,14 @@ export class TaskNodeOffScreenView implements IViewOffScreen {
                         height={element.size.height}
                         rx={6}
                         ry={6}
-                        class={{ 'off-screen-task': true, [`off-screen-task-${args.numberOfOverlaps > 1 ? 'multiple' : offScreenElement.taskType}`]: true }}
+                        class={{
+                            'off-screen-task': true,
+                            [`off-screen-task-${args.numberOfOverlaps > 1 ? 'multiple' : offScreenElement.taskType}`]: true
+                        }}
                     ></rect>
-                    <text x={'8px'} y={'12px'}>{args.numberOfOverlaps > 1 ? args.numberOfOverlaps : ''}</text>
+                    <text x={'8px'} y={'12px'}>
+                        {args.numberOfOverlaps > 1 ? args.numberOfOverlaps : ''}
+                    </text>
                 </g>
             </g>
         );

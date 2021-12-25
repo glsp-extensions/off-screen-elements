@@ -19,7 +19,9 @@ import {
     Point,
     PolylineEdgeViewWithGapsOnIntersections,
     RenderingContext,
-    SEdge, SGraph, SGraphView,
+    SEdge,
+    SGraph,
+    SGraphView,
     toDegrees
 } from '@eclipse-glsp/client';
 import { inject, injectable } from 'inversify';
@@ -35,7 +37,6 @@ const JSX = { createElement: svg };
 
 @injectable()
 export class WorkflowSGraphView<IRenderingArgs> extends SGraphView<IRenderingArgs> {
-
     @inject(WORKFLOW_TYPES.OffScreenElements)
     offScreenElements: OffScreenElements;
 

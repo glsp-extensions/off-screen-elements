@@ -20,7 +20,8 @@ import {
     createClientContainer,
     DeleteElementContextMenuItemProvider,
     DiamondNodeView,
-    editLabelFeature, GLSPGraph,
+    editLabelFeature,
+    GLSPGraph,
     GridSnapper,
     LogLevel,
     overrideViewerOptions,
@@ -42,7 +43,7 @@ import 'sprotty/css/edit-label.css';
 import '../css/diagram.css';
 import { directTaskEditor } from './direct-task-editing/di.config';
 import { ActivityNode, CategoryNode, Icon, TaskNode, WeightedEdge } from './model';
-import {IconView, WorkflowEdgeView, WorkflowSGraphView} from './workflow-views';
+import { IconView, WorkflowEdgeView, WorkflowSGraphView } from './workflow-views';
 import { offScreenElements } from './off-screen-elements/di.config';
 
 const workflowDiagramModule = new ContainerModule((bind, unbind, isBound, rebind) => {

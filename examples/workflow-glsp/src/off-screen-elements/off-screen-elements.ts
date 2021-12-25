@@ -16,29 +16,24 @@
 
 import { WORKFLOW_TYPES } from '../workflow-types';
 import {
-     BoundsAware,
+    BoundsAware,
     getZoom,
     isInjectable,
     RenderingContext,
     SChildElement,
     SConnectableElement,
-    SModelElement, SParentElement,
+    SModelElement,
+    SParentElement,
     SShapeElement
 } from '@eclipse-glsp/client';
 import { interfaces, injectable, inject } from 'inversify';
 import { IViewOffScreen, OffScreenViewRegistry } from './off-screen-views';
 import { OffScreenModelRegistry, registerOffScreenModelElement } from './models';
-import {
-    areOverlappingWithZoom,
-    getBorderIntersectionPoint,
-    getCenterPoint,
-    isVisible,
-    toRelativePoint
-} from './utils';
+import { areOverlappingWithZoom, getBorderIntersectionPoint, getCenterPoint, isVisible, toRelativePoint } from './utils';
 import { VNode } from 'snabbdom';
 import { Point } from '@eclipse-glsp/protocol';
 
-const SIZE_MULTIPLIER = 2;
+const SIZE_MULTIPLIER = 4;
 
 @injectable()
 export class OffScreenElements {
@@ -95,26 +90,38 @@ export class OffScreenElements {
 
         // create groups of overlapping elements
 
-        for (const elementKey of Object.keys(this.offScreenIndicators)) {
-            let groupFound = false;
-            for (const group of groups) {
-                for (const element of group) {
-                    if (areOverlappingWithZoom(this.offScreenIndicators[elementKey].indicator, element.indicator, SIZE_MULTIPLIER)) {
-                        group.push(this.offScreenIndicators[elementKey]);
-                        this.offScreenIndicators[elementKey].overlaps = group;
-                        groupFound = true;
-                        break;
+        const ungroupedElementIds = Object.keys(this.offScreenIndicators);
+
+        while (ungroupedElementIds.length > 0) {
+            let overlapFound = false;
+
+            // iterate over all elements and add them to groups if possible
+            for (let i = 0; i < ungroupedElementIds.length; i++) {
+                const nextElementId = ungroupedElementIds[i];
+
+                loop1: for (const group of groups) {
+                    for (const element of group) {
+                        if (areOverlappingWithZoom(this.offScreenIndicators[nextElementId].indicator, element.indicator, SIZE_MULTIPLIER)) {
+                            group.push(this.offScreenIndicators[nextElementId]);
+                            this.offScreenIndicators[nextElementId].overlaps = group;
+                            ungroupedElementIds.splice(i, 1);
+                            i--;
+                            overlapFound = true;
+                            break loop1;
+                        }
                     }
                 }
-
-                if (groupFound) {
-                    break;
-                }
             }
-            if (!groupFound) {
-                const newGroup = [this.offScreenIndicators[elementKey]];
-                groups.push(newGroup);
-                this.offScreenIndicators[elementKey].overlaps = newGroup;
+
+            // create a new group only if no overlaps have been found in the previous iteration
+            // if overlap has been found, iterate over all again
+            if (!overlapFound) {
+                const elementToAdd = ungroupedElementIds.pop();
+                if (elementToAdd) {
+                    const newGroup = [this.offScreenIndicators[elementToAdd]];
+                    groups.push(newGroup);
+                    this.offScreenIndicators[elementToAdd].overlaps = newGroup;
+                }
             }
         }
     }
@@ -125,12 +132,12 @@ export class OffScreenElements {
                 // get average point
                 const centerPoints: Point[] = element.overlaps.map(sshape => getCenterPoint(sshape.element.bounds));
                 let averagePoint: Point = {
-                    x: centerPoints.reduce((prev, curr) => prev+curr.x, 0),
-                    y: centerPoints.reduce((prev, curr) => prev+curr.y, 0)
+                    x: centerPoints.reduce((prev, curr) => prev + curr.x, 0),
+                    y: centerPoints.reduce((prev, curr) => prev + curr.y, 0)
                 };
                 averagePoint = {
-                    x: averagePoint.x/(element.overlaps.length),
-                    y: averagePoint.y/(element.overlaps.length)
+                    x: averagePoint.x / element.overlaps.length,
+                    y: averagePoint.y / element.overlaps.length
                 };
 
                 const originalPosition = element.element.position;
@@ -143,7 +150,6 @@ export class OffScreenElements {
     }
 
     public createOffScreenElementsRec(parent: SParentElement, context: RenderingContext): void {
-
         if (this.offScreenModelRegistry.hasKey(parent.type) && !isVisible(parent as SChildElement & BoundsAware, context)) {
             const id = `${parent.id}${OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX}`;
             let indicatorElement = parent.index.getById(id) as SShapeElement;
@@ -163,7 +169,7 @@ export class OffScreenElements {
             this.offScreenIndicators[parent.id] = { indicator: indicatorElement, element: parent as SShapeElement, overlaps: [] };
         }
 
-        for(const child of parent.children) {
+        for (const child of parent.children) {
             this.createOffScreenElementsRec(child, context);
         }
     }
@@ -174,7 +180,10 @@ export class OffScreenElements {
         }
 
         // only render first element of overlaps
-        if (this.offScreenIndicators[offScreenElement.id].overlaps.length && this.offScreenIndicators[offScreenElement.id].overlaps[0].element.id !== offScreenElement.id) {
+        if (
+            this.offScreenIndicators[offScreenElement.id].overlaps.length &&
+            this.offScreenIndicators[offScreenElement.id].overlaps[0].element.id !== offScreenElement.id
+        ) {
             return;
         }
 
@@ -202,13 +211,13 @@ export class OffScreenElements {
 
         const elementBounds = offScreenElement.root.localToParent(offScreenElement.position);
 
-        let elementCenterPoint = { x: elementBounds.x, y: elementBounds.y};
+        let elementCenterPoint = { x: elementBounds.x, y: elementBounds.y };
         if (calculateCenter) {
             elementCenterPoint = getCenterPoint(
-                {...elementBounds, width: offScreenElement.size.width, height: offScreenElement.size.height},
+                { ...elementBounds, width: offScreenElement.size.width, height: offScreenElement.size.height },
                 zoomFactor
             );
-      }
+        }
 
         const stageCenterPoint = {
             x: offScreenElement.root.canvasBounds.width / 2,
