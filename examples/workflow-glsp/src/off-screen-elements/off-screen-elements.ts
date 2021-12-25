@@ -75,6 +75,10 @@ export class OffScreenElements {
         return element.id;
     }
 
+    public getOffScreenIndicator(elementId: string): OffScreenElementToRender | undefined {
+        return this.offScreenIndicators[elementId];
+    }
+
     public isOffScreenElementId(elementId: string): boolean {
         return elementId.endsWith(OffScreenElements.OFF_SCREEN_ELEMENT_POSTFIX);
     }
