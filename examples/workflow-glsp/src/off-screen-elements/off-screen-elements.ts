@@ -33,7 +33,7 @@ import { areOverlappingWithZoom, getBorderIntersectionPoint, getCenterPoint, isV
 import { VNode } from 'snabbdom';
 import { Point } from '@eclipse-glsp/protocol';
 
-const SIZE_MULTIPLIER = 4;
+const OVERLAP_SIZE_MULTIPLIER = 4;
 
 @injectable()
 export class OffScreenElements {
@@ -101,7 +101,13 @@ export class OffScreenElements {
 
                 loop1: for (const group of groups) {
                     for (const element of group) {
-                        if (areOverlappingWithZoom(this.offScreenIndicators[nextElementId].indicator, element.indicator, SIZE_MULTIPLIER)) {
+                        if (
+                            areOverlappingWithZoom(
+                                this.offScreenIndicators[nextElementId].indicator,
+                                element.indicator,
+                                OVERLAP_SIZE_MULTIPLIER
+                            )
+                        ) {
                             group.push(this.offScreenIndicators[nextElementId]);
                             this.offScreenIndicators[nextElementId].overlaps = group;
                             ungroupedElementIds.splice(i, 1);
@@ -200,12 +206,10 @@ export class OffScreenElements {
     }
 
     assignBorderPosition(indicatorModel: SShapeElement, offScreenElement: SShapeElement, calculateCenter = true): void {
-        /*
-        element position is always at the top left corner but for calculation of the
-        intersection point, it should be at the center of the element.
-        This means, that the position of both elements, offScreenElement and indicatorModel,
-        have to be adjusted.
-         */
+        // element position is always at the top left corner but for calculation of the
+        // intersection point, it should be at the center of the element.
+        // This means, that the position of both elements, offScreenElement and indicatorModel,
+        // have to be adjusted.
 
         const zoomFactor = getZoom(offScreenElement.root);
 

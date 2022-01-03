@@ -13,7 +13,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, BaseGLSPTool, CenterAction, MouseListener, SelectAction, SModelElement } from '@eclipse-glsp/client';
+import { Action, BaseGLSPTool, CenterAction, FitToScreenAction, MouseListener, SelectAction, SModelElement } from '@eclipse-glsp/client';
 import { inject, injectable } from 'inversify';
 import { WORKFLOW_TYPES } from '../workflow-types';
 import { OffScreenElements } from './off-screen-elements';
@@ -57,7 +57,13 @@ class OffScreenElementMouseListener extends MouseListener {
 
         if (offScreenElement?.indicator) {
             const elementIds = offScreenElement.overlaps.map(elm => elm.element.id);
-            return [new SelectAction(elementIds), new CenterAction(elementIds, true, false)];
+
+            return [
+                new SelectAction(elementIds),
+                offScreenElement.overlaps.length > 1
+                    ? new FitToScreenAction(elementIds, 30, undefined, true)
+                    : new CenterAction(elementIds, true, false)
+            ];
         }
         return [];
     }
