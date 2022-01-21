@@ -80,6 +80,41 @@ export function areOverlappingWithZoom(
     return true;
 }
 
+/**
+ *
+ * indicator positioning strategy 1
+ *
+ * positions indicators to the closest point that they were last seen at the border of the viewport
+ */
+export function getBorderPosition(elementCenterPoint: Point, r: Bounds): Point {
+    const left = elementCenterPoint.x < r.x;
+    const right = elementCenterPoint.x > r.x + r.width;
+    const top = elementCenterPoint.y < r.y;
+    const bottom = elementCenterPoint.y > r.y + r.height;
+
+    const intersectionPoint = { x: 0, y: 0 };
+
+    if (left || right) {
+        intersectionPoint.x = left ? r.x : r.x + r.width;
+        intersectionPoint.y = inRange(r.y, r.y + r.height, elementCenterPoint.y);
+    } else if (top || bottom) {
+        intersectionPoint.x = inRange(r.x, r.x + r.width, elementCenterPoint.x);
+        intersectionPoint.y = top ? r.y : r.y + r.height;
+    }
+
+    return intersectionPoint;
+}
+
+function inRange(min: number, max: number, value: number): number {
+    return Math.min(Math.max(value, min), max);
+}
+
+/**
+ *
+ * indicator positioning strategy 2
+ *
+ * positions indicators at the intersection point of a line (viewport center -> element center) with the border of the viewport
+ */
 export function getBorderIntersectionPoint(a: Point, r: Bounds): Point {
     const s = (r.y - a.y) / (r.x - a.x);
     const hsw = (s * r.width) / 2;

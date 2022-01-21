@@ -29,7 +29,7 @@ import {
 import { interfaces, injectable, inject } from 'inversify';
 import { IViewOffScreen, OffScreenViewRegistry } from './off-screen-views';
 import { OffScreenModelRegistry, registerOffScreenModelElement } from './models';
-import { areOverlappingWithZoom, getBorderIntersectionPoint, getCenterPoint, isVisible, toRelativePoint } from './utils';
+import { areOverlappingWithZoom, getBorderPosition, getCenterPoint, isVisible, toRelativePoint } from './utils';
 import { VNode } from 'snabbdom';
 import { Point } from '@eclipse-glsp/protocol';
 
@@ -223,6 +223,7 @@ export class OffScreenElements {
             );
         }
 
+        /*
         const stageCenterPoint = {
             x: offScreenElement.root.canvasBounds.width / 2,
             y: offScreenElement.root.canvasBounds.height / 2
@@ -230,6 +231,16 @@ export class OffScreenElements {
 
         const intersectionPoint = getBorderIntersectionPoint(elementCenterPoint, {
             ...stageCenterPoint,
+            width: offScreenElement.root.canvasBounds.width - indicatorModel.size.width,
+            height: offScreenElement.root.canvasBounds.height - indicatorModel.size.height
+        });
+         */
+
+        const intersectionPoint = getBorderPosition(elementCenterPoint, {
+            ...{
+                x: offScreenElement.root.canvasBounds.x + indicatorModel.size.width / 2,
+                y: offScreenElement.root.canvasBounds.y + indicatorModel.size.height / 2
+            },
             width: offScreenElement.root.canvasBounds.width - indicatorModel.size.width,
             height: offScreenElement.root.canvasBounds.height - indicatorModel.size.height
         });
