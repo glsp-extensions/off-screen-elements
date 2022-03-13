@@ -33,13 +33,13 @@
     "src"
   ],
   "dependencies": {
+    "inversify": "^5.0.1",
     "uuid": "7.0.3",
-    "vscode-ws-jsonrpc": "0.2.0",
-    "inversify": "^5.0.1"
+    "vscode-ws-jsonrpc": "0.2.0"
   },
   "devDependencies": {
-    "@types/uuid": "3.4.5",
     "@babel/runtime": "^7.11.2",
+    "@types/uuid": "3.4.5",
     "rimraf": "^2.6.1",
     "typescript": "^3.9.2"
   },
