@@ -32,13 +32,13 @@
 
 .off-screen-task {
     stroke: black;
-    stroke-width: 1;
+    stroke-width: 0;
 }
 .off-screen-task-manual {
-    fill: lightblue;
+    fill: #db8651;
 }
 .off-screen-task-automated {
-    fill: lightgray;
+    fill: #5b9fa8;
 }
 
 .off-screen-task-multiple {
