@@ -135,6 +135,10 @@ export class EdgeCreationToolMouseListener extends DragAwareMouseListener {
     }
 
     mouseOver(target: SModelElement, event: MouseEvent): Action[] {
+        // quick fix to prevent it from finding itself
+        if (target.id === 'sprotty_feedback_edge') {
+            return [];
+        }
         const newCurrentTarget = findParentByFeature(target, isConnectable);
         if (newCurrentTarget !== this.currentTarget) {
             this.currentTarget = newCurrentTarget;

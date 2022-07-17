@@ -243,6 +243,10 @@ class EdgeEditListener extends DragAwareMouseListener implements SelectionListen
     }
 
     mouseOver(target: SModelElement, event: MouseEvent): Action[] {
+        // quick fix to prevent it from finding itself
+        if (target.id === 'sprotty_feedback_edge') {
+            return [];
+        }
         if (this.edge && this.isReconnecting()) {
             const currentTarget = findParentByFeature(target, isConnectable);
             if (!this.newConnectable || currentTarget !== this.newConnectable) {
