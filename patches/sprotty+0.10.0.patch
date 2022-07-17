@@ -1,0 +1,13 @@
+diff --git a/node_modules/sprotty/src/base/model/smodel-utils.ts b/node_modules/sprotty/src/base/model/smodel-utils.ts
+index d507afd..b881a24 100644
+--- a/node_modules/sprotty/src/base/model/smodel-utils.ts
++++ b/node_modules/sprotty/src/base/model/smodel-utils.ts
+@@ -121,7 +121,7 @@ export function translatePoint(point: Point, source: SModelElement, target: SMod
+                 return point;
+         }
+         // Translate from the root to the target element
+-        const targetTrace = [];
++        const targetTrace: SChildElement[] = [];
+         while (target instanceof SChildElement) {
+             targetTrace.push(target);
+             target = target.parent;
