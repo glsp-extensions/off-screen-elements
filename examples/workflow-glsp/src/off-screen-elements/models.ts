@@ -23,13 +23,13 @@ export const RECTANGULAR_SCALED_ANCHOR_KIND = 'rectangular_scaled';
 export class TaskNodeOffScreenElement extends SConnectableElement implements LayoutContainer {
     static readonly DEFAULT_FEATURES = [boundsFeature];
 
-    get anchorKind(): string | undefined {
+    override get anchorKind(): string | undefined {
         return RECTANGULAR_SCALED_ANCHOR_KIND;
     }
 
     layout: string;
-    layoutOptions?: { [key: string]: string | number | boolean };
-    size = {
+    override layoutOptions?: { [key: string]: string | number | boolean };
+    override size = {
         width: 16,
         height: 16
     };

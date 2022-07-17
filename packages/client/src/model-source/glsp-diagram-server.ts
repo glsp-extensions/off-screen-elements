@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2019-2021 EclipseSource and others.
+ * Copyright (c) 2019-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,23 +15,21 @@
  ********************************************************************************/
 import {
     Action,
+    ActionMessage,
     ComputedBoundsAction,
-    ExportSvgAction,
     GLSPClient,
-    isRequestModelAction,
-    isServerMessageAction,
-    isSetEditModeAction,
+    RequestModelAction,
     ServerMessageAction,
     SetEditModeAction
 } from '@eclipse-glsp/protocol';
 import { injectable } from 'inversify';
-import { ActionHandlerRegistry, ActionMessage, DiagramServer, ICommand, ServerStatusAction, SwitchEditModeCommand } from 'sprotty';
+import { ActionHandlerRegistry, DiagramServerProxy, ExportSvgAction, ICommand, ServerStatusAction, SwitchEditModeCommand } from 'sprotty';
 import { SourceUriAware } from '../base/source-uri-aware';
 
 const receivedFromServerProperty = '__receivedFromServer';
 
 @injectable()
-export class GLSPDiagramServer extends DiagramServer implements SourceUriAware {
+export class GLSPDiagramServer extends DiagramServerProxy implements SourceUriAware {
     protected _sourceUri: string;
     protected _glspClient?: GLSPClient;
     protected ready = false;
@@ -55,25 +53,25 @@ export class GLSPDiagramServer extends DiagramServer implements SourceUriAware {
         }
     }
 
-    initialize(registry: ActionHandlerRegistry): void {
+    override initialize(registry: ActionHandlerRegistry): void {
         registerDefaultGLSPServerActions(registry, this);
         if (!this.clientId) {
             this.clientId = this.viewerOptions.baseDiv;
         }
     }
 
-    handle(action: Action): void | ICommand | Action {
-        if (isRequestModelAction(action) && action.options) {
+    override handle(action: Action): void | ICommand | Action {
+        if (RequestModelAction.is(action) && action.options) {
             this._sourceUri = action.options.sourceUri as string;
         }
         return super.handle(action);
     }
 
-    handleLocally(action: Action): boolean {
-        if (isServerMessageAction(action)) {
+    override handleLocally(action: Action): boolean {
+        if (ServerMessageAction.is(action)) {
             return this.handleServerMessageAction(action);
         }
-        if (isSetEditModeAction(action)) {
+        if (SetEditModeAction.is(action)) {
             return this.handleSetEditModeAction(action);
         }
         return super.handleLocally(action);
@@ -84,7 +82,7 @@ export class GLSPDiagramServer extends DiagramServer implements SourceUriAware {
         return false;
     }
 
-    protected handleComputedBounds(_action: ComputedBoundsAction): boolean {
+    protected override handleComputedBounds(_action: ComputedBoundsAction): boolean {
         return true;
     }
 
@@ -92,7 +90,7 @@ export class GLSPDiagramServer extends DiagramServer implements SourceUriAware {
         return !isReceivedFromServer(action);
     }
 
-    public getSourceURI(): string {
+    public get sourceURI(): string {
         return this._sourceUri;
     }
 }
@@ -101,7 +99,7 @@ export function isReceivedFromServer(action: Action): boolean {
     return (action as any)[receivedFromServerProperty] === true;
 }
 
-export function registerDefaultGLSPServerActions(registry: ActionHandlerRegistry, diagramServer: DiagramServer): void {
+export function registerDefaultGLSPServerActions(registry: ActionHandlerRegistry, diagramServer: DiagramServerProxy): void {
     registry.register(ServerMessageAction.KIND, diagramServer);
     registry.register(ServerStatusAction.KIND, diagramServer);
     registry.register(ExportSvgAction.KIND, diagramServer);

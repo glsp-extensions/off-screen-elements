@@ -15,7 +15,6 @@
  ********************************************************************************/
 import 'reflect-metadata';
 import { ContainerModule } from 'inversify';
-import { TYPES } from 'sprotty';
 import { OffScreenElementRenderer } from './off-screen-element-renderer';
 import { IViewArgs, RenderingTargetKind, ViewRegistry } from 'sprotty/lib/base/views/view';
 import { IVNodePostprocessor } from 'sprotty/lib/base/views/vnode-postprocessor';
@@ -24,13 +23,13 @@ import { WORKFLOW_TYPES } from '../workflow-types';
 import { configureOffScreenModelElement, OffScreenElements } from './off-screen-elements';
 import { OffScreenModelRegistry, TaskNodeOffScreenElement } from './models';
 import { RectangleScaledAnchor } from './rectangle-scaled-anchor';
-import { GLSP_TYPES } from '@eclipse-glsp/client';
+import { TYPES } from '@eclipse-glsp/client';
 import { ScrollToOffScreenElementTool } from './scroll-to-off-screen-element-tool';
 
 export const offScreenElements = new ContainerModule((bind, unbind, isBound, rebind) => {
     const context = { bind, unbind, isBound, rebind };
 
-    bind(GLSP_TYPES.IDefaultTool).to(ScrollToOffScreenElementTool);
+    bind(TYPES.IDefaultTool).to(ScrollToOffScreenElementTool);
 
     bind(TYPES.IAnchorComputer).to(RectangleScaledAnchor).inSingletonScope();
 

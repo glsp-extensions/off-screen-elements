@@ -1,0 +1,48 @@
+diff --git a/node_modules/sprotty/src/base/model/smodel-utils.ts b/node_modules/sprotty/src/base/model/smodel-utils.ts
+index 7470e19..979e2a9 100644
+--- a/node_modules/sprotty/src/base/model/smodel-utils.ts
++++ b/node_modules/sprotty/src/base/model/smodel-utils.ts
+@@ -128,7 +128,7 @@ export function translatePoint(point: Point, source: SModelElement, target: SMod
+                 return point;
+         }
+         // Translate from the root to the target element
+-        const targetTrace = [];
++        const targetTrace: SChildElement[] = [];
+         while (target instanceof SChildElement) {
+             targetTrace.push(target);
+             target = target.parent;
+diff --git a/node_modules/sprotty/src/base/views/view.tsx b/node_modules/sprotty/src/base/views/view.tsx
+index efb93d7..aaf12b8 100644
+--- a/node_modules/sprotty/src/base/views/view.tsx
++++ b/node_modules/sprotty/src/base/views/view.tsx
+@@ -106,7 +106,7 @@ export class ViewRegistry extends InstanceRegistry<IView> {
+         this.register(EMPTY_ROOT.type, new EmptyView());
+     }
+ 
+-    missing(key: string): IView {
++    override missing(key: string): IView {
+         return new MissingView();
+     }
+ }
+diff --git a/node_modules/sprotty/src/features/bounds/model.ts b/node_modules/sprotty/src/features/bounds/model.ts
+index 325f2fb..b7dfb2f 100644
+--- a/node_modules/sprotty/src/features/bounds/model.ts
++++ b/node_modules/sprotty/src/features/bounds/model.ts
+@@ -196,7 +196,7 @@ export abstract class SShapeElement extends SChildElement implements BoundsAware
+         };
+     }
+ 
+-    localToParent(point: Point | Bounds): Bounds {
++    override localToParent(point: Point | Bounds): Bounds {
+         const result = {
+             x: point.x + this.position.x,
+             y: point.y + this.position.y,
+@@ -210,7 +210,7 @@ export abstract class SShapeElement extends SChildElement implements BoundsAware
+         return result;
+     }
+ 
+-    parentToLocal(point: Point | Bounds): Bounds {
++    override parentToLocal(point: Point | Bounds): Bounds {
+         const result = {
+             x: point.x - this.position.x,
+             y: point.y - this.position.y,

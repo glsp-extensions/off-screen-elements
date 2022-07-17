@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2021 EclipseSource and others.
+ * Copyright (c) 2021-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,16 +23,16 @@ export class GLSPScrollMouseListener extends ScrollMouseListener implements IAct
     preventScrolling = false;
 
     handle(action: Action): void | Action | ICommand {
-        if (action instanceof EnableToolsAction) {
-            if (action.toolIds.includes(MarqueeMouseTool.ID)) {
+        if (action.kind === EnableToolsAction.KIND) {
+            if ((action as EnableToolsAction).toolIds.includes(MarqueeMouseTool.ID)) {
                 this.preventScrolling = true;
             }
-        } else if (action instanceof EnableDefaultToolsAction) {
+        } else if (action.kind === EnableDefaultToolsAction.KIND) {
             this.preventScrolling = false;
         }
     }
 
-    mouseDown(target: SModelElement, event: MouseEvent): (Action | Promise<Action>)[] {
+    override mouseDown(target: SModelElement, event: MouseEvent): (Action | Promise<Action>)[] {
         if (this.preventScrolling) {
             return [];
         }

@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2019-2021 EclipseSource and others.
+ * Copyright (c) 2019-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, isResponseAction, RequestAction, ResponseAction } from '@eclipse-glsp/protocol';
+import { Action, RequestAction, ResponseAction } from '@eclipse-glsp/protocol';
 import { inject } from 'inversify';
 import { ActionDispatcher } from 'sprotty';
 import { ModelInitializationConstraint } from './model-initialization-constraint';
@@ -23,7 +23,7 @@ export class GLSPActionDispatcher extends ActionDispatcher {
     protected initializedConstraint = false;
     @inject(ModelInitializationConstraint) protected initializationConstraint: ModelInitializationConstraint;
 
-    initialize(): Promise<void> {
+    override initialize(): Promise<void> {
         return super.initialize().then(() => this.startModelInitialization());
     }
 
@@ -39,14 +39,14 @@ export class GLSPActionDispatcher extends ActionDispatcher {
         return this.initializationConstraint.onInitialized();
     }
 
-    dispatch(action: Action): Promise<void> {
+    override dispatch(action: Action): Promise<void> {
         const result = super.dispatch(action);
         this.initializationConstraint.notifyDispatched(action);
         return result;
     }
 
-    protected handleAction(action: Action): Promise<void> {
-        if (isResponseAction(action)) {
+    protected override handleAction(action: Action): Promise<void> {
+        if (ResponseAction.hasValidResponseId(action)) {
             // clear timeout
             const timeout = this.timeouts.get(action.responseId);
             if (timeout !== undefined) {
@@ -64,6 +64,14 @@ export class GLSPActionDispatcher extends ActionDispatcher {
         return super.handleAction(action);
     }
 
+    override request<Res extends ResponseAction>(action: RequestAction<Res>): Promise<Res> {
+        if (!action.requestId && action.requestId === '') {
+            // No request id has been specified. So we use a generated one.
+            action.requestId = RequestAction.generateRequestId();
+        }
+        return super.request(action);
+    }
+
     /**
      * Dispatch a request and waits for a response until the timeout given in `timeoutMs` has
      * been reached. The returned promise is resolved when a response with matching identifier
@@ -75,8 +83,9 @@ export class GLSPActionDispatcher extends ActionDispatcher {
      * no value, otherwise it will be rejected.
      */
     requestUntil<Res extends ResponseAction>(action: RequestAction<Res>, timeoutMs = 2000, rejectOnTimeout = false): Promise<Res> {
-        if (!action.requestId) {
-            return Promise.reject(new Error('Request without requestId'));
+        if (!action.requestId && action.requestId === '') {
+            // No request id has been specified. So we use a generated one.
+            action.requestId = RequestAction.generateRequestId();
         }
 
         const requestId = action.requestId;

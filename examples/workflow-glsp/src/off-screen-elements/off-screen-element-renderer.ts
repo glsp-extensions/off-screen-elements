@@ -34,7 +34,7 @@ export class OffScreenElementRenderer extends ModelRenderer {
         this._postprocessors = postprocessors;
     }
 
-    renderElement(element: Readonly<SModelElement>): VNode | undefined {
+    override renderElement(element: Readonly<SModelElement>): VNode | undefined {
         const view = this.viewRegistry.get(element.type);
         let vnode = view.render(element, this, this.args);
 
@@ -51,7 +51,7 @@ export class OffScreenElementRenderer extends ModelRenderer {
         }
     }
 
-    renderChildren(element: Readonly<SParentElement>, args?: IViewArgs): VNode[] {
+    override renderChildren(element: Readonly<SParentElement>, args?: IViewArgs): VNode[] {
         const context = args
             ? new OffScreenElementRenderer(this.viewRegistry, this.offScreenElements, this.targetKind, this._postprocessors, {
                   ...args,

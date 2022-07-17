@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2020-2021 EclipseSource and others.
+ * Copyright (c) 2020-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,8 +13,8 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Point } from '@eclipse-glsp/protocol';
-import { BoundsAware, Dimension, ElementAndBounds, ElementMove, ModelLayoutOptions, SModelElement } from 'sprotty';
+import { Dimension, ElementAndBounds, Point, Writable } from '@eclipse-glsp/protocol';
+import { BoundsAware, ElementMove, ModelLayoutOptions, SModelElement } from 'sprotty';
 import { IMovementRestrictor } from '../features/change-bounds/movement-restrictor';
 
 export function minWidth(element: SModelElement & BoundsAware): number {
@@ -45,18 +45,18 @@ export function isValidSize(element: SModelElement & BoundsAware, size: Dimensio
     return size.width >= minWidth(element) && size.height >= minHeight(element);
 }
 
-export function isValidMove(element: SModelElement & BoundsAware, newPosition: Point, movementRestrictor?: IMovementRestrictor): boolean {
+export function isValidMove(element: SModelElement & BoundsAware, newPosition?: Point, movementRestrictor?: IMovementRestrictor): boolean {
     if (movementRestrictor) {
-        return movementRestrictor.validate(newPosition, element);
+        return movementRestrictor.validate(element, newPosition);
     }
     return true;
 }
 
 export function toValidElementMove(
     element: SModelElement & BoundsAware,
-    move: WriteableElementMove,
+    move: ElementMove,
     movementRestrictor?: IMovementRestrictor
-): WriteableElementMove | undefined {
+): ElementMove | undefined {
     if (!isValidMove(element, move.toPosition, movementRestrictor)) {
         return;
     }
@@ -65,9 +65,9 @@ export function toValidElementMove(
 
 export function toValidElementAndBounds(
     element: SModelElement & BoundsAware,
-    bounds: WriteableElementAndBounds,
+    bounds: Writable<ElementAndBounds>,
     movementRestrictor?: IMovementRestrictor
-): WriteableElementAndBounds | undefined {
+): ElementAndBounds | undefined {
     if (!isValidMove(element, bounds.newPosition, movementRestrictor)) {
         return;
     }
@@ -80,24 +80,4 @@ export function toValidElementAndBounds(
         bounds.newSize.height = elementMinHeight;
     }
     return bounds;
-}
-
-export interface WriteablePoint extends Point {
-    x: number;
-    y: number;
-}
-
-export interface WriteableElementMove extends ElementMove {
-    fromPosition?: WriteablePoint;
-    toPosition: WriteablePoint;
-}
-
-export interface WriteableDimension extends Dimension {
-    width: number;
-    height: number;
-}
-
-export interface WriteableElementAndBounds extends ElementAndBounds {
-    newPosition: WriteablePoint;
-    newSize: WriteableDimension;
 }

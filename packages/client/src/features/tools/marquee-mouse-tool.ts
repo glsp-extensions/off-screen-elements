@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2021 EclipseSource and others.
+ * Copyright (c) 2021-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,12 +24,11 @@ import {
     SEdge,
     SModelElement,
     SModelRoot,
-    SNode,
-    TYPES
+    SNode
 } from 'sprotty';
 import { DOMHelper } from 'sprotty/lib/base/views/dom-helper';
-import { GLSP_TYPES } from '../../base/types';
 import { DragAwareMouseListener } from '../../base/drag-aware-mouse-listener';
+import { TYPES } from '../../base/types';
 import { getAbsolutePosition, toAbsoluteBounds } from '../../utils/viewpoint-util';
 import { CursorCSS, cursorFeedbackAction } from '../tool-feedback/css-feedback';
 import { RemoveMarqueeAction } from '../tool-feedback/marquee-tool-feedback';
@@ -41,7 +40,7 @@ export class MarqueeMouseTool extends BaseGLSPTool {
     static ID = 'glsp.marquee-mouse-tool';
 
     @inject(TYPES.DOMHelper) protected domHelper: DOMHelper;
-    @inject(GLSP_TYPES.IMarqueeBehavior) @optional() protected marqueeBehavior: IMarqueeBehavior;
+    @inject(TYPES.IMarqueeBehavior) @optional() protected marqueeBehavior: IMarqueeBehavior;
 
     protected marqueeMouseListener: MarqueeMouseListener;
     protected shiftKeyListener: ShiftKeyListener = new ShiftKeyListener();
@@ -93,7 +92,7 @@ export class MarqueeMouseListener extends DragAwareMouseListener {
         this.edges = Array.from(document.querySelectorAll('g')).filter(e => sEdges.includes(this.domHelper.findSModelIdByDOMElement(e)));
     }
 
-    mouseDown(target: SModelElement, event: MouseEvent): Action[] {
+    override mouseDown(target: SModelElement, event: MouseEvent): Action[] {
         this.isActive = true;
         this.marqueeUtil.updateStartPoint(getAbsolutePosition(target, event));
         if (event.ctrlKey) {
@@ -108,27 +107,27 @@ export class MarqueeMouseListener extends DragAwareMouseListener {
         return [];
     }
 
-    mouseMove(target: SModelElement, event: MouseEvent): Action[] {
+    override mouseMove(target: SModelElement, event: MouseEvent): Action[] {
         this.marqueeUtil.updateCurrentPoint(getAbsolutePosition(target, event));
         if (this.isActive) {
             const nodeIdsSelected = this.nodes.filter(e => this.marqueeUtil.isNodeMarked(toAbsoluteBounds(e))).map(e => e.id);
             const edgeIdsSelected = this.edges.filter(e => this.isEdgeMarked(e)).map(e => this.domHelper.findSModelIdByDOMElement(e));
             const selected = nodeIdsSelected.concat(edgeIdsSelected);
             return [
-                new SelectAction([], Array.from(target.root.index.all().map(e => e.id))),
-                new SelectAction(selected.concat(this.previouslySelected), []),
+                SelectAction.create({ deselectedElementsIDs: Array.from(target.root.index.all().map(e => e.id)) }),
+                SelectAction.create({ selectedElementsIDs: selected.concat(this.previouslySelected) }),
                 this.marqueeUtil.drawMarqueeAction()
             ];
         }
         return [];
     }
 
-    mouseUp(target: SModelElement, event: MouseEvent): Action[] {
+    override mouseUp(target: SModelElement, event: MouseEvent): Action[] {
         this.isActive = false;
         if (event.shiftKey) {
-            return [new RemoveMarqueeAction()];
+            return [RemoveMarqueeAction.create()];
         }
-        return [new RemoveMarqueeAction(), new EnableDefaultToolsAction()];
+        return [RemoveMarqueeAction.create(), EnableDefaultToolsAction.create()];
     }
 
     isEdgeMarked(element: SVGElement): boolean {
@@ -144,10 +143,10 @@ export class MarqueeMouseListener extends DragAwareMouseListener {
 
 @injectable()
 export class ShiftKeyListener extends KeyListener {
-    keyUp(element: SModelElement, event: KeyboardEvent): Action[] {
+    override keyUp(element: SModelElement, event: KeyboardEvent): Action[] {
         if (event.shiftKey) {
             return [];
         }
-        return [new RemoveMarqueeAction(), new EnableDefaultToolsAction()];
+        return [RemoveMarqueeAction.create(), EnableDefaultToolsAction.create()];
     }
 }

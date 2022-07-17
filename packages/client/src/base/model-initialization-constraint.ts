@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2020-2021 EclipseSource and others.
+ * Copyright (c) 2020-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,10 +13,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, UpdateModelAction } from '@eclipse-glsp/protocol';
+import { Action, Deferred, SetModelAction, UpdateModelAction } from '@eclipse-glsp/protocol';
 import { injectable } from 'inversify';
 import { InitializeCanvasBoundsAction } from 'sprotty';
-import { Deferred } from 'sprotty/lib/utils/async';
 
 /**
  * The constraint defining when the initialization of the GLSP model is completed.
@@ -74,21 +73,20 @@ export abstract class ModelInitializationConstraint {
  */
 @injectable()
 export class DefaultModelInitializationConstraint extends ModelInitializationConstraint {
-    protected seenNonEmptyUpdateModel = false;
+    protected seenNonEmptyModelAction = false;
 
     isInitializedAfter(action: Action): boolean {
-        if (this.isNonEmptyUpdateModel(action)) {
-            this.seenNonEmptyUpdateModel = true;
-        } else if (this.seenNonEmptyUpdateModel && action.kind === InitializeCanvasBoundsAction.KIND) {
+        if (this.isNonEmptyModelAction(action)) {
+            this.seenNonEmptyModelAction = true;
+        } else if (this.seenNonEmptyModelAction && action.kind === InitializeCanvasBoundsAction.KIND) {
             return true;
         }
         return false;
     }
 
-    protected isNonEmptyUpdateModel(action: Action): boolean {
-        if (action && action.kind === UpdateModelAction.KIND) {
-            const updateModelAction = action as UpdateModelAction;
-            return updateModelAction.newRoot !== undefined && updateModelAction.newRoot.type !== 'NONE';
+    protected isNonEmptyModelAction(action: Action): boolean {
+        if (SetModelAction.is(action) || UpdateModelAction.is(action)) {
+            return action.newRoot.type !== 'NONE';
         }
         return false;
     }

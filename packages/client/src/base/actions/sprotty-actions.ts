@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2020-2021 EclipseSource and others.
+ * Copyright (c) 2022 STMicroelectronics and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,13 +13,14 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { ModelSourceChangedAction } from '@eclipse-glsp/protocol';
-import { ContainerModule } from 'inversify';
-import { configureActionHandler } from 'sprotty';
-import { ModelSourceChangedActionHandler } from './model-source-changed-action-handler';
+import { Action, hasArrayProp } from '@eclipse-glsp/protocol';
+import { SetBoundsAction } from 'sprotty-protocol/lib/actions';
+declare module 'sprotty-protocol/lib/actions' {
+    // eslint-disable-next-line no-shadow
+    namespace SetBoundsAction {
+        export function is(object: any): object is SetBoundsAction;
+    }
+}
 
-const modelSourceWatcherModule = new ContainerModule((bind, _unbind, isBound) => {
-    configureActionHandler({ bind, isBound }, ModelSourceChangedAction.KIND, ModelSourceChangedActionHandler);
-});
-
-export default modelSourceWatcherModule;
+SetBoundsAction.is = (object: any): object is SetBoundsAction =>
+    Action.hasKind(object, SetBoundsAction.KIND) && hasArrayProp(object, 'bounds');

@@ -52,17 +52,17 @@ class OffScreenElementMouseListener extends MouseListener {
         this.offScreenElements = offScreenElements;
     }
 
-    mouseUp(element: SModelElement, event: MouseEvent): Action[] {
+    override mouseUp(element: SModelElement, event: MouseEvent): Action[] {
         const offScreenElement = this.offScreenElements.getOffScreenIndicator(element.id);
 
         if (offScreenElement?.indicator) {
             const elementIds = offScreenElement.overlaps.map(elm => elm.element.id);
 
             return [
-                new SelectAction(elementIds),
+                SelectAction.create({ selectedElementsIDs: elementIds }),
                 offScreenElement.overlaps.length > 1
-                    ? new FitToScreenAction(elementIds, 30, undefined, true)
-                    : new CenterAction(elementIds, true, false)
+                    ? FitToScreenAction.create(elementIds, { padding: 30, animate: true })
+                    : CenterAction.create(elementIds, { animate: true, retainZoom: false })
             ];
         }
         return [];

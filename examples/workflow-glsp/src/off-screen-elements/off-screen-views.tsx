@@ -14,10 +14,9 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 import { injectable, multiInject, optional } from 'inversify';
-import { RenderingContext, SModelElement } from '@eclipse-glsp/client';
+import { RenderingContext, SModelElement, svg } from '@eclipse-glsp/client';
 import { VNode } from 'snabbdom';
 
-import { svg } from 'sprotty';
 import { InstanceRegistry } from 'sprotty/lib/utils/registry';
 import { WORKFLOW_TYPES } from '../workflow-types';
 import { IViewArgs } from 'sprotty/src/base/views/view';

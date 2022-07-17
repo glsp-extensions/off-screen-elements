@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2019-2021 EclipseSource and others.
+ * Copyright (c) 2019-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, CreateEdgeOperation, isTriggerElementTypeCreationAction, TriggerEdgeCreationAction } from '@eclipse-glsp/protocol';
+import { Action, CreateEdgeOperation, TriggerEdgeCreationAction } from '@eclipse-glsp/protocol';
 import { inject, injectable } from 'inversify';
 import {
     AnchorComputerRegistry,
@@ -66,13 +66,13 @@ export class EdgeCreationTool extends BaseGLSPTool implements IActionHandler {
     disable(): void {
         this.mouseTool.deregister(this.creationToolMouseListener);
         this.mouseTool.deregister(this.feedbackEndMovingMouseListener);
-        this.deregisterFeedback([new RemoveFeedbackEdgeAction(), cursorFeedbackAction()]);
+        this.deregisterFeedback([RemoveFeedbackEdgeAction.create(), cursorFeedbackAction()]);
     }
 
     handle(action: Action): Action | void {
-        if (isTriggerElementTypeCreationAction(action)) {
+        if (TriggerEdgeCreationAction.is(action)) {
             this.triggerAction = action;
-            return new EnableToolsAction([this.id]);
+            return EnableToolsAction.create([this.id]);
         }
     }
 }
@@ -96,16 +96,18 @@ export class EdgeCreationToolMouseListener extends DragAwareMouseListener {
         this.target = undefined;
         this.currentTarget = undefined;
         this.allowedTarget = false;
-        this.tool.dispatchFeedback([new RemoveFeedbackEdgeAction()]);
+        this.tool.dispatchFeedback([RemoveFeedbackEdgeAction.create()]);
     }
 
-    nonDraggingMouseUp(_element: SModelElement, event: MouseEvent): Action[] {
+    override nonDraggingMouseUp(_element: SModelElement, event: MouseEvent): Action[] {
         const result: Action[] = [];
         if (event.button === 0) {
             if (!this.isSourceSelected()) {
                 if (this.currentTarget && this.allowedTarget) {
                     this.source = this.currentTarget.id;
-                    this.tool.dispatchFeedback([new DrawFeedbackEdgeAction(this.triggerAction.elementTypeId, this.source)]);
+                    this.tool.dispatchFeedback([
+                        DrawFeedbackEdgeAction.create({ elementTypeId: this.triggerAction.elementTypeId, sourceId: this.source })
+                    ]);
                 }
             } else {
                 if (this.currentTarget && this.allowedTarget) {
@@ -113,15 +115,22 @@ export class EdgeCreationToolMouseListener extends DragAwareMouseListener {
                 }
             }
             if (this.source && this.target) {
-                result.push(new CreateEdgeOperation(this.triggerAction.elementTypeId, this.source, this.target, this.triggerAction.args));
+                result.push(
+                    CreateEdgeOperation.create({
+                        elementTypeId: this.triggerAction.elementTypeId,
+                        sourceElementId: this.source,
+                        targetElementId: this.target,
+                        args: this.triggerAction.args
+                    })
+                );
                 if (!isCtrlOrCmd(event)) {
-                    result.push(new EnableDefaultToolsAction());
+                    result.push(EnableDefaultToolsAction.create());
                 } else {
                     this.reinitialize();
                 }
             }
         } else if (event.button === 2) {
-            result.push(new EnableDefaultToolsAction());
+            result.push(EnableDefaultToolsAction.create());
         }
         return result;
     }
@@ -134,7 +143,7 @@ export class EdgeCreationToolMouseListener extends DragAwareMouseListener {
         return this.target !== undefined;
     }
 
-    mouseOver(target: SModelElement, event: MouseEvent): Action[] {
+    override mouseOver(target: SModelElement, event: MouseEvent): Action[] {
         // quick fix to prevent it from finding itself
         if (target.id === 'sprotty_feedback_edge') {
             return [];

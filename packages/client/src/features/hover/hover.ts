@@ -13,26 +13,24 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, Bounds, RequestPopupModelAction, SetPopupModelAction } from '@eclipse-glsp/protocol';
-import { injectable } from 'inversify';
 import {
-    EMPTY_ROOT,
-    HoverFeedbackAction,
-    HoverMouseListener,
-    IActionHandler,
-    ICommand,
+    Action,
+    Bounds,
     PreRenderedElementSchema,
-    SIssueMarker,
-    SIssueSeverity,
-    SModelElement,
+    RequestPopupModelAction,
+    SetPopupModelAction,
     SModelElementSchema,
     SModelRootSchema
-} from 'sprotty';
-import { isFocusStateChangedAction } from '../../base/actions/focus-change-action';
-import { GIssueMarker } from '../validation/issue-marker';
-
+} from '@eclipse-glsp/protocol';
+import { injectable } from 'inversify';
+import { EMPTY_ROOT, HoverFeedbackAction, HoverMouseListener, IActionHandler, ICommand, SModelElement } from 'sprotty';
+import { FocusStateChangedAction } from '../../base/actions/focus-change-action';
+import { EnableDefaultToolsAction, EnableToolsAction } from '../../base/tool-manager/tool-actions';
+import { EdgeCreationTool } from '../tools/edge-creation-tool';
+import { getSeverity, GIssueMarker } from '../validation/issue-marker';
 @injectable()
 export class GlspHoverMouseListener extends HoverMouseListener implements IActionHandler {
+    protected enableHover = true;
     /**
      * Stops mouse over timer and remove hover feedback, if focus is lost.
      *
@@ -43,25 +41,36 @@ export class GlspHoverMouseListener extends HoverMouseListener implements IActio
      * @returns a `HoverFeedbackAction` resetting the state, if the specified action indicates lost focus
      */
     handle(action: Action): void | Action | ICommand {
-        if (isFocusStateChangedAction(action) && !action.hasFocus) {
+        if (FocusStateChangedAction.is(action) && !action.hasFocus) {
             this.stopMouseOverTimer();
             if (this.lastHoverFeedbackElementId) {
                 const previousTargetId = this.lastHoverFeedbackElementId;
                 this.lastHoverFeedbackElementId = undefined;
-                return new HoverFeedbackAction(previousTargetId, false);
+                return HoverFeedbackAction.create({ mouseoverElement: previousTargetId, mouseIsOver: false });
             }
+        } else if (EnableToolsAction.is(action)) {
+            this.enableHover = !(action as EnableToolsAction).toolIds.includes(EdgeCreationTool.ID);
+        } else if (EnableDefaultToolsAction.is(action)) {
+            this.enableHover = true;
         }
     }
 
-    protected startMouseOverTimer(target: SModelElement, event: MouseEvent): Promise<Action> {
+    override mouseOver(target: SModelElement, event: MouseEvent): (Action | Promise<Action>)[] {
+        if (this.enableHover) {
+            return super.mouseOver(target, event);
+        }
+        return [];
+    }
+
+    protected override startMouseOverTimer(target: SModelElement, event: MouseEvent): Promise<Action> {
         this.stopMouseOverTimer();
         return new Promise(resolve => {
             this.state.mouseOverTimer = window.setTimeout(() => {
                 const popupBounds = this.computePopupBounds(target, { x: event.pageX, y: event.pageY });
                 if (target instanceof GIssueMarker) {
-                    resolve(new SetPopupModelAction(this.createPopupModel(target as GIssueMarker, popupBounds)));
+                    resolve(SetPopupModelAction.create(this.createPopupModel(target as GIssueMarker, popupBounds)));
                 } else {
-                    resolve(new RequestPopupModelAction(target.id, popupBounds));
+                    resolve(RequestPopupModelAction.create({ elementId: target.id, bounds: popupBounds }));
                 }
 
                 this.state.popupOpen = true;
@@ -98,17 +107,4 @@ export class GlspHoverMouseListener extends HoverMouseListener implements IActio
     protected modifyBounds(bounds: Bounds): Bounds {
         return bounds;
     }
-}
-
-export function getSeverity(marker: SIssueMarker): SIssueSeverity {
-    let currentSeverity: SIssueSeverity = 'info';
-    for (const severity of marker.issues.map(s => s.severity)) {
-        if (severity === 'error') {
-            return severity;
-        }
-        if (severity === 'warning' && currentSeverity === 'info') {
-            currentSeverity = severity;
-        }
-    }
-    return currentSeverity;
 }

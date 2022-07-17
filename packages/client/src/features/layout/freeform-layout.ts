@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2021 EclipseSource and others.
+ * Copyright (c) 2021-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,18 +13,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
+import { Bounds, Dimension, Point } from '@eclipse-glsp/protocol';
 import { injectable } from 'inversify';
-import {
-    Bounds,
-    BoundsData,
-    Dimension,
-    isValidDimension,
-    LayoutContainer,
-    Point,
-    SChildElement,
-    SParentElement,
-    StatefulLayouter
-} from 'sprotty';
+import { BoundsData, LayoutContainer, SChildElement, SParentElement, StatefulLayouter } from 'sprotty';
 import { AbstractLayout } from 'sprotty/lib/features/bounds/abstract-layout';
 import { AbstractLayoutOptions } from 'sprotty/lib/features/bounds/layout-options';
 
@@ -35,7 +26,7 @@ import { AbstractLayoutOptions } from 'sprotty/lib/features/bounds/layout-option
 export class FreeFormLayouter extends AbstractLayout<AbstractLayoutOptions> {
     static KIND = 'freeform';
 
-    layout(container: SParentElement & LayoutContainer, layouter: StatefulLayouter): void {
+    override layout(container: SParentElement & LayoutContainer, layouter: StatefulLayouter): void {
         const boundsData = layouter.getBoundsData(container);
         const options = this.getLayoutOptions(container);
         const childrenSize = this.getChildrenSize(container, options, layouter);
@@ -64,7 +55,7 @@ export class FreeFormLayouter extends AbstractLayout<AbstractLayoutOptions> {
         let maxY = 0;
         container.children.forEach(child => {
             const bounds = layouter.getBoundsData(child).bounds;
-            if (bounds !== undefined && isValidDimension(bounds)) {
+            if (bounds !== undefined && Dimension.isValid(bounds)) {
                 const childMaxX = bounds.x + bounds.width;
                 const childMaxY = bounds.y + bounds.height;
                 maxX = Math.max(maxX, childMaxX);
@@ -97,7 +88,7 @@ export class FreeFormLayouter extends AbstractLayout<AbstractLayoutOptions> {
         return currentOffset;
     }
 
-    protected getFinalContainerBounds(
+    protected override getFinalContainerBounds(
         container: SParentElement & LayoutContainer,
         lastOffset: Point,
         options: AbstractLayoutOptions,

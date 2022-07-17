@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2019-2021 EclipseSource and others.
+ * Copyright (c) 2019-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,19 +15,20 @@
  ********************************************************************************/
 import { RedoOperation, UndoOperation } from '@eclipse-glsp/protocol';
 import { inject, injectable } from 'inversify';
-import { CommandStack, IActionDispatcher, SModelRoot, TYPES } from 'sprotty';
+import { CommandStack, IActionDispatcher, SModelRoot } from 'sprotty';
+import { TYPES } from './types';
 
 @injectable()
 export class GLSPCommandStack extends CommandStack {
     @inject(TYPES.IActionDispatcherProvider) protected actionDispatcher: () => Promise<IActionDispatcher>;
 
-    undo(): Promise<SModelRoot> {
-        this.actionDispatcher().then(dispatcher => dispatcher.dispatch(new UndoOperation()));
+    override undo(): Promise<SModelRoot> {
+        this.actionDispatcher().then(dispatcher => dispatcher.dispatch(UndoOperation.create()));
         return this.thenUpdate();
     }
 
-    redo(): Promise<SModelRoot> {
-        this.actionDispatcher().then(dispatcher => dispatcher.dispatch(new RedoOperation()));
+    override redo(): Promise<SModelRoot> {
+        this.actionDispatcher().then(dispatcher => dispatcher.dispatch(RedoOperation.create()));
         return this.thenUpdate();
     }
 }

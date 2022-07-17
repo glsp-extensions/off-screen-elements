@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2019-2021 EclipseSource and others.
+ * Copyright (c) 2019-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,27 +13,15 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
-import { Action, DeleteMarkersAction, Marker, SetMarkersAction } from '@eclipse-glsp/protocol';
+import { Action, DeleteMarkersAction, hasArrayProp, Marker, SetMarkersAction } from '@eclipse-glsp/protocol';
 import { inject, injectable, optional } from 'inversify';
-import {
-    Command,
-    CommandExecutionContext,
-    CommandReturn,
-    IActionDispatcher,
-    SIssue,
-    SIssueMarker,
-    SModelElement,
-    SModelRoot,
-    SParentElement,
-    TYPES
-} from 'sprotty';
+import { CommandExecutionContext, CommandReturn, IActionDispatcher, IActionHandler, ICommand, SIssueMarker, SParentElement } from 'sprotty';
 import { EditorContextService } from '../../base/editor-context-service';
-import { GLSP_TYPES } from '../../base/types';
+import { TYPES } from '../../base/types';
 import { removeCssClasses } from '../../utils/smodel-util';
-import { getSeverity } from '../hover/hover';
 import { IFeedbackActionDispatcher, IFeedbackEmitter } from '../tool-feedback/feedback-action-dispatcher';
 import { FeedbackCommand } from '../tool-feedback/model';
-import { createSIssue, getOrCreateSIssueMarker, getSIssueMarker } from './issue-marker';
+import { createSIssue, getOrCreateSIssueMarker, getSeverity, getSIssueMarker, GIssueMarker } from './issue-marker';
 
 /**
  * Feedback emitter sending actions for visualizing model validation feedback and
@@ -41,11 +29,11 @@ import { createSIssue, getOrCreateSIssueMarker, getSIssueMarker } from './issue-
  */
 @injectable()
 export class ValidationFeedbackEmitter implements IFeedbackEmitter {
-    @inject(GLSP_TYPES.IFeedbackActionDispatcher) protected feedbackActionDispatcher: IFeedbackActionDispatcher;
+    @inject(TYPES.IFeedbackActionDispatcher) protected feedbackActionDispatcher: IFeedbackActionDispatcher;
 
     @inject(TYPES.IActionDispatcherProvider) protected actionDispatcher: () => Promise<IActionDispatcher>;
 
-    private registeredAction: MarkersAction;
+    private registeredAction: ApplyMarkersAction;
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     private constructor() {}
@@ -54,13 +42,13 @@ export class ValidationFeedbackEmitter implements IFeedbackEmitter {
      * Register the action that should be emitted for visualizing validation feedback.
      * @param action the action that should be emitted when the model is updated and that will visualize the model validation feedback.
      */
-    registerValidationFeedbackAction(action: MarkersAction): void {
+    registerValidationFeedbackAction(action: ApplyMarkersAction): void {
         // De-register old action responsible for applying markers and re-applying them when the model is updated
         this.feedbackActionDispatcher.deregisterFeedback(this, []);
 
         // Clear existing markers
         if (this.registeredAction !== undefined) {
-            const deleteMarkersAction = new DeleteMarkersAction(this.registeredAction.markers);
+            const deleteMarkersAction = DeleteMarkersAction.create(this.registeredAction.markers);
             this.actionDispatcher().then(dispatcher => dispatcher.dispatch(deleteMarkersAction));
         }
 
@@ -88,101 +76,92 @@ export abstract class ExternalMarkerManager {
 
     removeMarkers(markers: Marker[]): void {
         if (this.actionDispatcher) {
-            this.actionDispatcher.dispatch(new DeleteMarkersAction(markers));
+            this.actionDispatcher.dispatch(DeleteMarkersAction.create(markers));
         }
     }
 
     abstract setMarkers(markers: Marker[], sourceUri?: string): void;
 }
 
-/**
- * Command for handling `SetMarkersAction`
- */
 @injectable()
-export class SetMarkersCommand extends Command {
-    @inject(ValidationFeedbackEmitter) protected validationFeedbackEmitter: ValidationFeedbackEmitter;
-    @inject(ExternalMarkerManager) @optional() protected externalMarkerManager?: ExternalMarkerManager;
-    @inject(EditorContextService) protected editorContextService: EditorContextService;
+export class SetMarkersActionHandler implements IActionHandler {
+    @inject(ValidationFeedbackEmitter)
+    protected validationFeedbackEmitter: ValidationFeedbackEmitter;
 
-    static readonly KIND = SetMarkersAction.KIND;
+    @inject(ExternalMarkerManager)
+    @optional()
+    protected externalMarkerManager?: ExternalMarkerManager;
 
-    constructor(@inject(TYPES.Action) public action: SetMarkersAction) {
-        super();
+    @inject(EditorContextService)
+    protected editorContextService: EditorContextService;
+
+    handle(action: SetMarkersAction): void | Action | ICommand {
+        const markers: Marker[] = action.markers;
+        this.setMarkers(markers);
     }
 
-    async execute(context: CommandExecutionContext): Promise<SModelRoot> {
-        const markers: Marker[] = this.action.markers;
+    async setMarkers(markers: Marker[]): Promise<void> {
         const uri = await this.editorContextService.getSourceUri();
-        if (this.externalMarkerManager) {
-            this.externalMarkerManager.setMarkers(markers, uri);
-        }
-        const applyMarkersAction: ApplyMarkersAction = new ApplyMarkersAction(markers);
+        this.externalMarkerManager?.setMarkers(markers, uri);
+        const applyMarkersAction = ApplyMarkersAction.create(markers);
         this.validationFeedbackEmitter.registerValidationFeedbackAction(applyMarkersAction);
-        return context.root;
-    }
-
-    undo(context: CommandExecutionContext): CommandReturn {
-        return context.root;
-    }
-
-    redo(context: CommandExecutionContext): CommandReturn {
-        return this.execute(context);
     }
 }
 
 /**
- * Interface for actions processing markers
+ * Action for applying makers to the graphical model.
  */
-export interface MarkersAction extends Action {
-    readonly markers: Marker[];
+export interface ApplyMarkersAction extends Action {
+    kind: typeof ApplyMarkersAction.KIND;
+    markers: Marker[];
+}
+
+export namespace ApplyMarkersAction {
+    export const KIND = 'applyMarkers';
+
+    export function is(object: any): object is ApplyMarkersAction {
+        return Action.hasKind(object, KIND) && hasArrayProp(object, 'markers');
+    }
+
+    export function create(markers: Marker[]): ApplyMarkersAction {
+        return {
+            kind: KIND,
+            markers
+        };
+    }
 }
 
 /**
- * Action for applying makers to a model
- */
-@injectable()
-export class ApplyMarkersAction implements MarkersAction {
-    constructor(public readonly markers: Marker[], public readonly kind = ApplyMarkersCommand.KIND) {}
-}
-
-/**
- * Command for handling `ApplyMarkersAction`
+ * Handles {@link ApplyMarkersAction}s by creating the corresponding {@link SIssueMarker}s and
+ * adding them to the graphical model.
  */
 @injectable()
 export class ApplyMarkersCommand extends FeedbackCommand {
-    static KIND = 'applyMarkers';
-    readonly priority = 0;
+    static KIND = ApplyMarkersAction.KIND;
 
     constructor(@inject(TYPES.Action) protected action: ApplyMarkersAction) {
         super();
     }
 
     execute(context: CommandExecutionContext): CommandReturn {
-        const markers: Marker[] = this.action.markers;
-        for (const marker of markers) {
-            const modelElement: SModelElement | undefined = context.root.index.getById(marker.elementId);
+        this.action.markers.forEach(marker => {
+            const modelElement = context.root.index.getById(marker.elementId);
             if (modelElement instanceof SParentElement) {
-                const issueMarker: SIssueMarker = getOrCreateSIssueMarker(modelElement);
-                const issue: SIssue = createSIssue(marker);
+                const issueMarker = getOrCreateSIssueMarker(modelElement);
+                const issue = createSIssue(marker);
                 issueMarker.issues.push(issue);
+                if (issueMarker instanceof GIssueMarker) {
+                    issueMarker.computeProjectionCssClasses();
+                }
                 addMaxSeverityCSSClassToIssueParent(modelElement, issueMarker);
             }
-        }
+        });
         return context.root;
-    }
-
-    undo(context: CommandExecutionContext): CommandReturn {
-        return context.root;
-    }
-
-    redo(context: CommandExecutionContext): CommandReturn {
-        return this.execute(context);
     }
 }
 
 function addMaxSeverityCSSClassToIssueParent(modelElement: SParentElement, issueMarker: SIssueMarker): void {
     const maxSeverityCSSClass = getSeverity(issueMarker);
-
     if (!modelElement.cssClasses) {
         modelElement.cssClasses = [maxSeverityCSSClass];
     } else {
@@ -192,14 +171,15 @@ function addMaxSeverityCSSClassToIssueParent(modelElement: SParentElement, issue
 }
 
 function removeCSSClassFromIssueParent(modelElement: SParentElement, issueMarker: SIssueMarker): void {
-    removeCssClasses(modelElement, [getSeverity(issueMarker)]);
+    const severity = getSeverity(issueMarker);
+    removeCssClasses(modelElement, [severity]);
 }
 
 /**
  * Command for handling `DeleteMarkersAction`
  */
 @injectable()
-export class DeleteMarkersCommand extends Command {
+export class DeleteMarkersCommand extends FeedbackCommand {
     static KIND = DeleteMarkersAction.KIND;
 
     constructor(@inject(TYPES.Action) protected action: DeleteMarkersAction) {
@@ -207,15 +187,14 @@ export class DeleteMarkersCommand extends Command {
     }
 
     execute(context: CommandExecutionContext): CommandReturn {
-        const markers: Marker[] = this.action.markers;
-        for (const marker of markers) {
-            const modelElement: SModelElement | undefined = context.root.index.getById(marker.elementId);
+        this.action.markers.forEach(marker => {
+            const modelElement = context.root.index.getById(marker.elementId);
             if (modelElement instanceof SParentElement) {
-                const issueMarker: SIssueMarker | undefined = getSIssueMarker(modelElement);
-                if (issueMarker !== undefined) {
+                const issueMarker = getSIssueMarker(modelElement);
+                if (issueMarker) {
                     removeCSSClassFromIssueParent(modelElement, issueMarker);
                     for (let index = 0; index < issueMarker.issues.length; ++index) {
-                        const issue: SIssue = issueMarker.issues[index];
+                        const issue = issueMarker.issues[index];
                         if (issue.message === marker.description) {
                             issueMarker.issues.splice(index--, 1);
                         }
@@ -227,15 +206,8 @@ export class DeleteMarkersCommand extends Command {
                     }
                 }
             }
-        }
-        return context.root;
-    }
+        });
 
-    undo(context: CommandExecutionContext): CommandReturn {
         return context.root;
-    }
-
-    redo(context: CommandExecutionContext): CommandReturn {
-        return this.execute(context);
     }
 }

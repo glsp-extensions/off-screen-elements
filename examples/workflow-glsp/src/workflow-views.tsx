@@ -15,6 +15,7 @@
  ********************************************************************************/
 import {
     angleOfPoint,
+    findParentByFeature,
     getSubType,
     Point,
     PolylineEdgeViewWithGapsOnIntersections,
@@ -23,11 +24,12 @@ import {
     setAttr,
     SGraph,
     SGraphView,
+    ShapeView,
+    svg,
     toDegrees
 } from '@eclipse-glsp/client';
 import { inject, injectable } from 'inversify';
 import { VNode } from 'snabbdom';
-import { findParentByFeature, ShapeView, svg } from 'sprotty';
 import { Icon, isTaskNode } from './model';
 import { IViewArgs } from 'sprotty/lib/base/views/view';
 import { WORKFLOW_TYPES } from './workflow-types';
@@ -41,7 +43,7 @@ export class WorkflowSGraphView<IRenderingArgs> extends SGraphView<IRenderingArg
     @inject(WORKFLOW_TYPES.OffScreenElements)
     offScreenElements: OffScreenElements;
 
-    render(model: Readonly<SGraph>, context: RenderingContext, args?: IRenderingArgs): VNode {
+    override render(model: Readonly<SGraph>, context: RenderingContext, args?: IRenderingArgs): VNode {
         this.offScreenElements.createOffScreenElements(model, context);
         return super.render(model, context, args);
     }
@@ -52,7 +54,7 @@ export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
     @inject(WORKFLOW_TYPES.OffScreenElements)
     offScreenElements: OffScreenElements;
 
-    protected renderAdditionals(edge: SEdge, segments: Point[], context: RenderingContext): VNode[] {
+    protected override renderAdditionals(edge: SEdge, segments: Point[], context: RenderingContext): VNode[] {
         const additionals = super.renderAdditionals(edge, segments, context);
         const p1 = segments[segments.length - 2];
         const p2 = segments[segments.length - 1];
@@ -70,7 +72,7 @@ export class WorkflowEdgeView extends PolylineEdgeViewWithGapsOnIntersections {
         return additionals;
     }
 
-    render(edge: SEdge, context: RenderingContext, args?: IViewArgs): VNode | undefined {
+    override render(edge: SEdge, context: RenderingContext, args?: IViewArgs): VNode | undefined {
         // replace target and source with off-screen elements
         if (edge.target) {
             edge.targetId = this.offScreenElements.getElementId(edge.target, context);
@@ -128,6 +130,7 @@ export class IconView extends ShapeView {
         if (subType) {
             setAttr(vnode, 'class', subType);
         }
+
         return vnode;
     }
 }

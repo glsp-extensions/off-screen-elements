@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2020-2021 EclipseSource and others.
+ * Copyright (c) 2020-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,13 +15,13 @@
  ********************************************************************************/
 import { Point } from '@eclipse-glsp/protocol';
 import { injectable } from 'inversify';
-import { Decoration, DecorationPlacer, isSizeable, ORIGIN_POINT, SChildElement, SModelElement, SRoutableElement } from 'sprotty';
+import { Decoration, DecorationPlacer, isSizeable, SChildElement, SModelElement, SRoutableElement } from 'sprotty';
 
 @injectable()
 export class GlspDecorationPlacer extends DecorationPlacer {
     protected static readonly DECORATION_OFFSET: Point = { x: 12, y: 10 };
 
-    protected getPosition(element: SModelElement & Decoration): Point {
+    protected override getPosition(element: SModelElement & Decoration): Point {
         if (element instanceof SChildElement && element.parent instanceof SRoutableElement) {
             return super.getPosition(element);
         }
@@ -31,6 +31,6 @@ export class GlspDecorationPlacer extends DecorationPlacer {
                 y: GlspDecorationPlacer.DECORATION_OFFSET.y * element.bounds.height
             };
         }
-        return ORIGIN_POINT;
+        return Point.ORIGIN;
     }
 }

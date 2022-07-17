@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2019-2021 EclipseSource and others.
+ * Copyright (c) 2019-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,7 +28,7 @@ import {
 } from 'sprotty';
 import { matchesKeystroke } from 'sprotty/lib/utils/keyboard';
 import { GLSPTool } from '../../base/tool-manager/glsp-tool-manager';
-import { GLSP_TYPES } from '../../base/types';
+import { TYPES } from '../../base/types';
 import { IMouseTool } from '../mouse-tool/mouse-tool';
 import { CursorCSS, cursorFeedbackAction } from '../tool-feedback/css-feedback';
 import { IFeedbackActionDispatcher } from '../tool-feedback/feedback-action-dispatcher';
@@ -60,7 +60,7 @@ export class DelKeyDeleteTool implements GLSPTool {
 
 @injectable()
 export class DeleteKeyListener extends KeyListener {
-    keyDown(element: SModelElement, event: KeyboardEvent): Action[] {
+    override keyDown(element: SModelElement, event: KeyboardEvent): Action[] {
         if (matchesKeystroke(event, 'Delete')) {
             const deleteElementIds = Array.from(
                 element.root.index
@@ -70,7 +70,7 @@ export class DeleteKeyListener extends KeyListener {
                     .map(e => e.id)
             );
             if (deleteElementIds.length > 0) {
-                return [new DeleteElementOperation(deleteElementIds)];
+                return [DeleteElementOperation.create(deleteElementIds)];
             }
         }
         return [];
@@ -88,8 +88,8 @@ export class MouseDeleteTool implements GLSPTool {
 
     protected deleteToolMouseListener: DeleteToolMouseListener = new DeleteToolMouseListener();
 
-    @inject(GLSP_TYPES.MouseTool) protected mouseTool: IMouseTool;
-    @inject(GLSP_TYPES.IFeedbackActionDispatcher) protected readonly feedbackDispatcher: IFeedbackActionDispatcher;
+    @inject(TYPES.MouseTool) protected mouseTool: IMouseTool;
+    @inject(TYPES.IFeedbackActionDispatcher) protected readonly feedbackDispatcher: IFeedbackActionDispatcher;
 
     get id(): string {
         return MouseDeleteTool.ID;
@@ -108,15 +108,15 @@ export class MouseDeleteTool implements GLSPTool {
 
 @injectable()
 export class DeleteToolMouseListener extends MouseListener {
-    mouseUp(target: SModelElement, event: MouseEvent): Action[] {
+    override mouseUp(target: SModelElement, event: MouseEvent): Action[] {
         const deletableParent = findParentByFeature(target, isDeletable);
         if (deletableParent === undefined) {
             return [];
         }
         const result: Action[] = [];
-        result.push(new DeleteElementOperation([deletableParent.id]));
+        result.push(DeleteElementOperation.create([deletableParent.id]));
         if (!isCtrlOrCmd(event)) {
-            result.push(new EnableDefaultToolsAction());
+            result.push(EnableDefaultToolsAction.create());
         }
         return result;
     }

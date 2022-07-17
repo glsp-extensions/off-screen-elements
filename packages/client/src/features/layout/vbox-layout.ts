@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (c) 2021 EclipseSource and others.
+ * Copyright (c) 2021-2022 EclipseSource and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,17 +13,13 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
+import { Bounds, Dimension, Point } from '@eclipse-glsp/protocol';
 import { injectable } from 'inversify';
 import {
-    Bounds,
     BoundsData,
-    Dimension,
-    EMPTY_BOUNDS,
     isBoundsAware,
     isLayoutableChild,
-    isValidDimension,
     LayoutContainer,
-    Point,
     SChildElement,
     SModelElement,
     SParentElement,
@@ -44,14 +40,17 @@ export interface VBoxLayoutOptionsExt extends VBoxLayoutOptions {
  */
 @injectable()
 export class VBoxLayouterExt extends VBoxLayouter {
-    static KIND = VBoxLayouter.KIND;
+    static override KIND = VBoxLayouter.KIND;
 
-    layout(container: SParentElement & LayoutContainer, layouter: StatefulLayouter): void {
+    override layout(container: SParentElement & LayoutContainer, layouter: StatefulLayouter): void {
         const boundsData = layouter.getBoundsData(container);
         const options = this.getLayoutOptions(container);
         const childrenSize = this.getChildrenSize(container, options, layouter);
 
         const fixedSize = this.getFixedContainerBounds(container, options, layouter);
+
+        const currentWidth = (boundsData.bounds?.width || 0) - options.paddingLeft - options.paddingRight;
+        const currentHeight = (boundsData.bounds?.height || 0) - options.paddingTop - options.paddingBottom;
 
         const maxWidth =
             options.paddingFactor *
@@ -64,8 +63,11 @@ export class VBoxLayouterExt extends VBoxLayouter {
                 ? Math.max(fixedSize.height - options.paddingTop - options.paddingBottom, childrenSize.height)
                 : Math.max(0, fixedSize.height - options.paddingTop - options.paddingBottom));
 
+        const width = Math.max(currentWidth, maxWidth);
+        const height = Math.max(currentHeight, maxHeight);
+
         // Remaining size that can be grabbed by children with the vGrab option
-        const grabHeight: number = maxHeight - childrenSize.height;
+        const grabHeight: number = height - childrenSize.height;
         // Number of children that request vGrab
         // FIXME: This approach works fine when only 1 child uses VGrab, but may cause rounding issues
         // when the grabHeight can't be equally shared by all children.
@@ -74,13 +76,13 @@ export class VBoxLayouterExt extends VBoxLayouter {
             .filter(opt => opt.vGrab).length;
 
         if (maxWidth > 0 && maxHeight > 0) {
-            const offset = this.layoutChildren(container, layouter, options, maxWidth, maxHeight, grabHeight, grabbingChildren);
+            const offset = this.layoutChildren(container, layouter, options, width, height, grabHeight, grabbingChildren);
             boundsData.bounds = this.getFinalContainerBounds(container, offset, options, childrenSize.width, childrenSize.height);
             boundsData.boundsChanged = true;
         }
     }
 
-    protected getChildrenSize(
+    protected override getChildrenSize(
         container: SParentElement & LayoutContainer,
         containerOptions: VBoxLayoutOptionsExt,
         layouter: StatefulLayouter
@@ -91,7 +93,7 @@ export class VBoxLayouterExt extends VBoxLayouter {
         container.children.forEach(child => {
             if (isLayoutableChild(child)) {
                 const bounds = layouter.getBoundsData(child).bounds;
-                if (bounds !== undefined && isValidDimension(bounds)) {
+                if (bounds !== undefined && Dimension.isValid(bounds)) {
                     maxHeight += bounds.height;
                     if (isFirst) {
                         isFirst = false;
@@ -109,7 +111,7 @@ export class VBoxLayouterExt extends VBoxLayouter {
         return result;
     }
 
-    protected layoutChildren(
+    protected override layoutChildren(
         container: SParentElement & LayoutContainer,
         layouter: StatefulLayouter,
         containerOptions: VBoxLayoutOptionsExt,
@@ -128,7 +130,7 @@ export class VBoxLayouterExt extends VBoxLayouter {
                 const boundsData = layouter.getBoundsData(child);
                 const bounds = boundsData.bounds;
                 const childOptions = this.getChildLayoutOptions(child, containerOptions);
-                if (bounds !== undefined && isValidDimension(bounds)) {
+                if (bounds !== undefined && Dimension.isValid(bounds)) {
                     currentOffset = this.layoutChild(
                         child,
                         boundsData,
@@ -147,7 +149,7 @@ export class VBoxLayouterExt extends VBoxLayouter {
         return currentOffset;
     }
 
-    protected layoutChild(
+    protected override layoutChild(
         child: SChildElement,
         boundsData: BoundsData,
         bounds: Bounds,
@@ -159,7 +161,14 @@ export class VBoxLayouterExt extends VBoxLayouter {
         grabHeight?: number,
         grabbingChildren?: number
     ): Point {
+        const hAlign = childOptions.hGrab ? 'left' : childOptions.hAlign;
+        const dx = this.getDx(hAlign, bounds, maxWidth);
         let offset = super.layoutChild(child, boundsData, bounds, childOptions, containerOptions, currentOffset, maxWidth, maxHeight);
+        boundsData.bounds = {
+            ...boundsData.bounds!,
+            x: currentOffset.x + dx,
+            y: currentOffset.y
+        };
         if (childOptions.hGrab) {
             boundsData.bounds = {
                 x: boundsData.bounds!.x,
@@ -183,7 +192,11 @@ export class VBoxLayouterExt extends VBoxLayouter {
         return offset;
     }
 
-    protected getFixedContainerBounds(container: SModelElement, layoutOptions: VBoxLayoutOptionsExt, layouter: StatefulLayouter): Bounds {
+    protected override getFixedContainerBounds(
+        container: SModelElement,
+        layoutOptions: VBoxLayoutOptionsExt,
+        layouter: StatefulLayouter
+    ): Bounds {
         const currentContainer = container;
         // eslint-disable-next-line no-constant-condition
         if (isBoundsAware(currentContainer)) {
@@ -193,14 +206,14 @@ export class VBoxLayouterExt extends VBoxLayouter {
             const height = elementOptions?.prefHeight ?? 0;
             return { ...bounds, width, height };
         }
-        return EMPTY_BOUNDS;
+        return Bounds.EMPTY;
     }
 
-    protected getChildLayoutOptions(child: SChildElement, containerOptions: VBoxLayoutOptionsExt): VBoxLayoutOptionsExt {
-        return super.getChildLayoutOptions(child, containerOptions) as VBoxLayoutOptionsExt;
+    protected override getChildLayoutOptions(child: SChildElement, containerOptions: VBoxLayoutOptionsExt): VBoxLayoutOptionsExt {
+        return super.getChildLayoutOptions(child, this.filterContainerOptions(containerOptions)) as VBoxLayoutOptionsExt;
     }
 
-    protected getLayoutOptions(element: SModelElement): VBoxLayoutOptionsExt {
+    protected override getLayoutOptions(element: SModelElement): VBoxLayoutOptionsExt {
         return super.getLayoutOptions(element) as VBoxLayoutOptionsExt;
     }
 
@@ -208,7 +221,7 @@ export class VBoxLayouterExt extends VBoxLayouter {
         return (element as any).layoutOptions;
     }
 
-    protected getFinalContainerBounds(
+    protected override getFinalContainerBounds(
         container: SParentElement & LayoutContainer,
         lastOffset: Point,
         options: VBoxLayoutOptionsExt,
@@ -229,7 +242,7 @@ export class VBoxLayouterExt extends VBoxLayouter {
         return result;
     }
 
-    protected getDefaultLayoutOptions(): VBoxLayoutOptionsExt {
+    protected override getDefaultLayoutOptions(): VBoxLayoutOptionsExt {
         return {
             resizeContainer: true,
             paddingTop: 5,
@@ -250,7 +263,11 @@ export class VBoxLayouterExt extends VBoxLayouter {
         };
     }
 
-    protected spread(a: VBoxLayoutOptionsExt, b: VBoxLayoutOptionsExt): VBoxLayoutOptionsExt {
-        return { ...a, ...b };
+    protected filterContainerOptions(containerOptions: VBoxLayoutOptionsExt): VBoxLayoutOptionsExt {
+        // Reset object-specific layout options to default before merging,
+        // to make sure they won't be inherited (grab, prefSize)
+        // eslint-disable-next-line no-null/no-null
+        const localOptions = { vGrab: false, hGrab: false, prefHeight: null, prefWidth: null };
+        return { ...containerOptions, ...localOptions };
     }
 }
