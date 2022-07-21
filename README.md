@@ -5,13 +5,26 @@ It is based on a fork of the original GLSP client on https://github.com/eclipse-
 
 ![Off-Screen Visualization](/documentation/video_prot2.gif)
 
-### Prerequisites:
+## Running the project with docker:
+
+Prerequisites:
+
+- Docker 17.05 or higher
+- docker-compose
+
+In the root of this repository, run
+```bash
+docker-compose up
+```
+This may take a while. Once both containers have finished building, open http://localhost:8080/diagram.html in your browser.
+## Running the project locally:
+
+Prerequisites:
 
 - Node 16 or higher
 - Yarn 1.7.0 or higher
 - Java 11 or higher
 
-### Running the project:
 
 In the root of this repository, run
 
@@ -26,4 +39,4 @@ yarn download:exampleServer
 java -jar org.eclipse.glsp.example.workflow-X.X.X-SNAPSHOT-glsp.jar org.eclipse.glsp.example.workflow.launch.ExampleServerLauncher --port=8081 --websocket
 ```
 
-Once the server is running, open the `glsp-client/examples/workflow-standalone/app/diagram.html` file in your favorite browser.
+Once the server is running, open the `glsp-client/examples/workflow-standalone/app/diagram.html` file in your browser.

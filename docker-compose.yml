@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+  client:
+    build:
+      dockerfile: .docker/Dockerfile.client
+      context: .
+    ports:
+      - 8080:8080
+  server:
+    build:
+      dockerfile: .docker/Dockerfile.server
+      context: .
+    volumes:
+      - ./examples/workflow-standalone/app:/app
+    ports:
+      - 8081:8081
+    tty: true
