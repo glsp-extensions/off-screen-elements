@@ -34,9 +34,12 @@ import { Icon, isTaskNode } from './model';
 import { IViewArgs } from 'sprotty/lib/base/views/view';
 import { WORKFLOW_TYPES } from './workflow-types';
 import { OffScreenElements } from './off-screen-elements/off-screen-elements';
+import { Timer } from './timer';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const JSX = { createElement: svg };
+
+const timer = new Timer();
 
 @injectable()
 export class WorkflowSGraphView<IRenderingArgs> extends SGraphView<IRenderingArgs> {
@@ -44,8 +47,11 @@ export class WorkflowSGraphView<IRenderingArgs> extends SGraphView<IRenderingArg
     offScreenElements: OffScreenElements;
 
     override render(model: Readonly<SGraph>, context: RenderingContext, args?: IRenderingArgs): VNode {
+        timer.startTimer();
         this.offScreenElements.createOffScreenElements(model, context);
-        return super.render(model, context, args);
+        const r = super.render(model, context, args);
+        timer.endTimer();
+        return r;
     }
 }
 
