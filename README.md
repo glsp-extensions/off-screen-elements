@@ -40,3 +40,8 @@ java -jar org.eclipse.glsp.example.workflow-X.X.X-SNAPSHOT-glsp.jar org.eclipse.
 ```
 
 Once the server is running, open the `glsp-client/examples/workflow-standalone/app/diagram.html` file in your browser.
+
+
+## Performance evaluation
+
+Information about the performance evaluation can be found in the branch [performance-evaluation](https://github.com/glsp-extensions/off-screen-elements/tree/performance-evaluation).
